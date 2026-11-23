@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Myanmar AI Trio Studio</title>
+
+  <link rel="manifest" id="pwa-manifest">
+  <!-- ONNX Runtime Web for YeeNyunn/nara-mini-v1 -->
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js"></script>
+
+  <style>
+    :root {
+      --bg-pure: #000000;
+      --bg-surface: #161618;
+      --bg-elevated: #222225;
+      --bg-hover: #2e2e32;
+      --text-main: #f3f4f6;
+      --text-sub: #9ca3af;
+      --border: #2a2a30;
+      --accent-blue: #2563eb;
+      --mm-size: 15.5px;
+    }
+    body.light-mode {
+      --bg-pure: #ffffff;
+      --bg-surface: #f4f4f5;
+      --bg-elevated: #e4e4e7;
+      --bg-hover: #d4d4d8;
+      --text-main: #18181b;
+      --text-sub: #52525b;
+      --border: #e4e4e7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Pyidaungsu", "Noto Sans Myanmar", sans-serif;
+      background: var(--bg-pure);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* ---------- Top Header ---------- */
+    .topbar {
+      height: 60px;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-pure);
+      z-index: 10;
+      gap: 6px;
+    }
+    .circle-btn {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0;
+      font-size: 13px; font-weight: 700;
+    }
+    .circle-btn:active { background: var(--bg-hover); }
+
+    .control-boxes {
+      display: flex; align-items: center; gap: 5px;
+      background: var(--bg-surface);
+      padding: 4px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+    }
+    .ctrl-box {
+      padding: 6px 11px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: var(--bg-elevated);
+      color: var(--text-main);
+      font-size: 12px; font-weight: 700; letter-spacing: 0.3px;
+      cursor: pointer; transition: all 0.18s ease;
+    }
+    .ctrl-box:active { transform: scale(0.95); }
+    .ctrl-play.active { background: rgba(16,185,129,0.2); border-color: #10b981; color: #34d399; box-shadow: 0 0 10px rgba(16,185,129,0.25); }
+    .ctrl-pause.active { background: rgba(245,158,11,0.2); border-color: #f59e0b; color: #fbbf24; box-shadow: 0 0 10px rgba(245,158,11,0.2); }
+    .ctrl-next { background: rgba(59,130,246,0.15); border-color: rgba(59,130,246,0.4); color: #60a5fa; }
+
+    /* Sub Status Bar */
+    .sub-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 14px 6px;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .status-line {
+      font-size: 11.5px;
+      color: var(--text-sub);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+    .level-pill {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      outline: none;
+      flex-shrink: 0;
+    }
+
+    /* ---------- Chat Area ---------- */
+    #chat-box {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 12px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scroll-behavior: smooth;
+    }
+    .empty-state { margin: auto; text-align: center; color: var(--text-sub); max-width: 340px; line-height: 1.7; }
+    .empty-state h2 { color: var(--text-main); font-size: 19px; margin-bottom: 6px; }
+
+    .msg-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      animation: fadeIn 0.25s ease;
+    }
+    .msg-row.row-user { flex-direction: row-reverse; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    .avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800; color: #fff;
+      margin-bottom: 2px;
+    }
+    .av-gemini { background: linear-gradient(135deg, #3b82f6, #6366f1); }
+    .av-deepseek { background: linear-gradient(135deg, #10b981, #059669); }
+    .av-groq { background: linear-gradient(135deg, #f97316, #ef4444); }
+    .av-user { background: linear-gradient(135deg, #71717a, #52525b); }
+
+    .bubble {
+      max-width: calc(100% - 46px);
+      min-width: 0;
+      border-radius: 20px 20px 20px 6px;
+      padding: 12px 14px;
+      display: flex; flex-direction: column; gap: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    }
+    .row-user .bubble {
+      border-radius: 20px 20px 6px 20px;
+      background: var(--accent-blue);
+      color: #fff;
+      max-width: 84%;
+    }
+    .row-gemini .bubble { background: rgba(59,130,246,0.14); }
+    .row-deepseek .bubble { background: rgba(16,185,129,0.14); }
+    .row-groq .bubble { background: rgba(249,115,22,0.14); }
+    body.light-mode .row-gemini .bubble { background: #dbeafe; }
+    body.light-mode .row-deepseek .bubble { background: #d1fae5; }
+    body.light-mode .row-groq .bubble { background: #ffedd5; }
+    body.light-mode .bubble { box-shadow: 0 1px 6px rgba(0,0,0,0.08); }
+
+    .card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+    .badge { font-size: 11.5px; font-weight: 700; letter-spacing: 0.3px; }
+    .badge-gemini { color: #60a5fa; }
+    .badge-deepseek { color: #34d399; }
+    .badge-groq { color: #fb923c; }
+    body.light-mode .badge-gemini { color: #1d4ed8; }
+    body.light-mode .badge-deepseek { color: #047857; }
+    body.light-mode .badge-groq { color: #c2410c; }
+
+    .mm-main-text {
+      font-size: var(--mm-size);
+      font-weight: 500;
+      line-height: 1.75;
+      color: var(--mm-color, var(--text-main));
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .row-user .mm-main-text { color: #fff; font-size: 15px; }
+
+    /* Bottom Action Bar under Myanmar Text */
+    .bottom-card-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 4px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255,255,255,0.09);
+    }
+    body.light-mode .bottom-card-actions {
+      border-top: 1px solid rgba(0,0,0,0.08);
+    }
+    .tts-btn {
+      background: rgba(16, 185, 129, 0.18);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 11px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    body.light-mode .tts-btn { color: #047857; background: rgba(16, 185, 129, 0.15); }
+    .dl-btn {
+      background: rgba(59, 130, 246, 0.18);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      color: #60a5fa;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 11px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    body.light-mode .dl-btn { color: #1d4ed8; background: rgba(59, 130, 246, 0.15); }
+    .card-btn {
+      background: rgba(255,255,255,0.08);
+      border: none;
+      color: var(--text-sub);
+      font-size: 11.5px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    body.light-mode .card-btn { background: rgba(0,0,0,0.07); }
+    .audio-player-mini {
+      width: 100%;
+      height: 32px;
+      margin-top: 4px;
+      border-radius: 8px;
+    }
+    .chat-img { max-width: 220px; max-height: 220px; border-radius: 14px; margin-top: 2px; }
+
+    /* ---------- Bottom Input ---------- */
+    .bottom-area { padding: 8px 12px 14px; background: var(--bg-pure); }
+    #img-preview-box {
+      display: none; align-items: center; gap: 8px;
+      background: var(--bg-elevated);
+      padding: 6px 10px; border-radius: 12px;
+      width: fit-content; margin-bottom: 8px;
+    }
+    #img-preview-box img { height: 40px; border-radius: 6px; }
+
+    .chat-pill-bar {
+      display: flex;
+      align-items: flex-end;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 6px 6px 6px 8px;
+      gap: 6px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .chat-pill-bar:focus-within {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+    .plus-btn {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--bg-hover); border: none;
+      color: var(--text-main); font-size: 22px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0;
+    }
+    .chat-pill-bar textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 15px;
+      line-height: 1.5;
+      outline: none;
+      min-width: 80px;
+      min-height: 36px;
+      max-height: 140px;
+      padding: 7px 4px;
+      resize: none;
+      overflow-y: auto;
+    }
+    .mic-btn {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: transparent; border: none; color: var(--text-sub);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0;
+    }
+    .mic-btn.recording { color: #ef4444; animation: pulse 1s infinite; }
+    @keyframes pulse { 50% { opacity: 0.4; } }
+
+    .send-arrow-btn {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      border: none; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.45);
+    }
+
+    /* ---------- Plus Menu Bottom Sheet (Categories & Custom Questions) ---------- */
+    .sheet-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 90;
+    }
+    .bottom-sheet {
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border);
+      border-radius: 24px 24px 0 0;
+      width: 100%;
+      max-width: 560px;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 14px 16px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      animation: slideUp 0.22s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .sheet-handle {
+      width: 40px; height: 4px;
+      background: var(--border);
+      border-radius: 99px;
+      margin: 0 auto 2px;
+    }
+    .sheet-header {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .sheet-header h3 { font-size: 16px; }
+
+    /* Category Tabs */
+    .cat-tabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .cat-tabs::-webkit-scrollbar { display: none; }
+    .cat-tab {
+      padding: 7px 13px;
+      border-radius: 999px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-sub);
+      font-size: 12.5px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .cat-tab.active {
+      background: var(--accent-blue);
+      border-color: var(--accent-blue);
+      color: #fff;
+    }
+
+    /* Custom Question Add Box */
+    .add-custom-box {
+      display: flex;
+      gap: 6px;
+      background: var(--bg-pure);
+      padding: 6px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+    }
+    .add-custom-box input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-size: 13px;
+      padding: 6px 8px;
+      outline: none;
+    }
+    .add-custom-btn {
+      background: #10b981;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .chip-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .prompt-chip-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .prompt-chip {
+      flex: 1;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 10px 13px;
+      border-radius: 13px;
+      font-size: 13.5px;
+      text-align: left;
+      cursor: pointer;
+      line-height: 1.5;
+    }
+    .prompt-chip:active {
+      background: var(--bg-hover);
+      border-color: var(--accent-blue);
+    }
+    .del-chip-btn {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #f87171;
+      width: 34px; height: 34px;
+      border-radius: 10px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* ---------- Drawer & Modals ---------- */
+    .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; z-index: 50; }
+    .drawer {
+      position: fixed; top: 0; left: -300px;
+      width: 285px; height: 100%;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border);
+      z-index: 60; transition: left 0.25s ease;
+      display: flex; flex-direction: column; padding: 16px;
+    }
+    .drawer.open { left: 0; }
+    .drawer-title {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
+      color: var(--text-sub); margin: 14px 0 6px; font-weight: 700;
+    }
+    .menu-item {
+      width: 100%; text-align: left; background: transparent; border: none;
+      color: var(--text-main); padding: 10px 12px; border-radius: 10px;
+      font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 10px;
+    }
+    .menu-item:hover { background: var(--bg-hover); }
+    .history-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+    .history-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 13px;
+    }
+    .history-row:hover, .history-row.active { background: var(--bg-hover); }
+    .history-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+      display: none; align-items: center; justify-content: center;
+      z-index: 100; padding: 14px;
+    }
+    .modal {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      width: 100%; max-width: 450px; max-height: 90vh;
+      overflow-y: auto; padding: 18px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .modal h3 { font-size: 17px; }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field label { font-size: 12px; color: var(--text-sub); display: flex; justify-content: space-between; }
+    .field input, .field select, .field textarea {
+      background: var(--bg-pure); border: 1px solid var(--border);
+      color: var(--text-main); padding: 10px; border-radius: 10px; font-size: 13px;
+    }
+    .field input[type="range"] { padding: 0; height: 28px; accent-color: var(--accent-blue); border: none; background: transparent; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+    .btn-save-set { background: var(--accent-blue); color: #fff; border: none; padding: 9px 18px; border-radius: 10px; font-weight: 600; cursor: pointer; }
+    .btn-cancel-set { background: var(--bg-elevated); color: var(--text-main); border: 1px solid var(--border); padding: 9px 16px; border-radius: 10px; cursor: pointer; }
+
+    .preview-bubble {
+      background: var(--bg-elevated); border-radius: 16px; padding: 12px 14px;
+    }
+    .swatches { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .swatch {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid transparent; cursor: pointer;
+      box-shadow: 0 0 0 1px var(--border);
+    }
+    .swatch.sel { border-color: var(--accent-blue); box-shadow: 0 0 0 2px var(--accent-blue); }
+    .swatch.auto {
+      background: conic-gradient(#fff 0 25%, #000 0 50%, #fff 0 75%, #000 0);
+      background-size: 10px 10px;
+    }
+    .swatches input[type="color"] {
+      width: 34px; height: 30px; padding: 0; border: none; background: none; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Top Header -->
+<div class="topbar">
+  <button class="circle-btn" onclick="toggleDrawer(true)" title="Menu">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+      <line x1="4" y1="9" x2="20" y2="9"></line>
+      <line x1="4" y1="15" x2="14" y2="15"></line>
+    </svg>
+  </button>
+
+  <div class="control-boxes">
+    <button class="ctrl-box ctrl-play" id="btn-play" onclick="startConversation()">Play</button>
+    <button class="ctrl-box ctrl-pause active" id="btn-pause" onclick="pauseConversation()">Pause</button>
+    <button class="ctrl-box ctrl-next" id="btn-next" onclick="skipAndPlay()">Next</button>
+  </div>
+
+  <div style="display:flex; gap:5px;">
+    <button class="circle-btn" onclick="openAppearance()" title="Font / Color">Aa</button>
+    <button class="circle-btn" onclick="createNewChat(true)" title="New Chat">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- Status & TTS Model Status -->
+<div class="sub-bar">
+  <div class="status-line" id="status-text">🇲🇲 မြန်မာ AI ၃ ဦး အသင့်ဖြစ်ပါပြီ</div>
+  <select class="level-pill" id="top-style-select" onchange="changeStyleQuick(this.value)" title="ဆွေးနွေးပုံစံ">
+    <option value="harmonious">🤝 ညှိနှိုင်းဆွေးနွေး</option>
+    <option value="debate">⚔️ အပြန်အလှန်ငြင်းခုံ</option>
+    <option value="deep">🎓 နက်နက်နဲနဲ သုံးသပ်</option>
+  </select>
+</div>
+
+<!-- Chat Display Area -->
+<div id="chat-box"></div>
+
+<!-- Bottom Input Bar -->
+<div class="bottom-area">
+  <div id="img-preview-box">
+    <img id="img-preview" src="" alt="Preview">
+    <span style="font-size:12px;">ပုံရွေးထားပါသည်</span>
+    <button class="card-btn" onclick="clearSelectedImage()">✕</button>
+  </div>
+
+  <div class="chat-pill-bar">
+    <input type="file" id="image-input" accept="image/*" style="display:none" onchange="handleImageSelect(event)">
+    <button class="plus-btn" onclick="openPlusMenu()" title="ကဏ္ဍစုံ မေးခွန်းများ & အသစ်ထည့်ရန်">+</button>
+
+    <textarea id="topic-input" rows="1" placeholder="မြန်မာလို မေးခွန်းရိုက်ပါ သို့မဟုတ် + နှိပ်ရွေးပါ..." oninput="autoResizeInput(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); sendUserMessage(); }"></textarea>
+
+    <button class="mic-btn" id="mic-btn" onclick="startVoiceInput()" title="အသံဖြင့်ပြောရန်">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+    </button>
+
+    <button class="send-arrow-btn" onclick="sendUserMessage()" title="ပို့မည်">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- Plus Menu Bottom Sheet (Categories + User Custom Questions) -->
+<div class="sheet-overlay" id="plus-sheet-overlay" onclick="if(event.target===this) closePlusMenu()">
+  <div class="bottom-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h3>📚 ကဏ္ဍစုံ မေးခွန်းများနှင့် ခေါင်းစဉ်အသစ်ထည့်ရန်</h3>
+      <button class="card-btn" onclick="closePlusMenu()">✕ ပိတ်မည်</button>
+    </div>
+
+    <!-- Image Upload Option -->
+    <button class="menu-item" style="background:var(--bg-elevated); border:1px solid var(--border); font-weight:600;" onclick="closePlusMenu(); document.getElementById('image-input').click();">
+      🖼️ ဖုန်းထဲမှ ပုံတင်ပြီး မြန်မာလို ဆွေးနွေးမည်
+    </button>
+
+    <!-- Category Tabs -->
+    <div class="cat-tabs" id="cat-tabs"></div>
+
+    <!-- User Add New Question Box -->
+    <div class="add-custom-box">
+      <input type="text" id="new-custom-q-input" placeholder="လက်ရှိကဏ္ဍထဲ မေးခွန်းအသစ် ရိုက်ထည့်ပါ..." onkeydown="if(event.key==='Enter') addNewCustomQuestion()">
+      <button class="add-custom-btn" onclick="addNewCustomQuestion()">+ အသစ်ထည့်</button>
+    </div>
+
+    <!-- Questions List -->
+    <div class="chip-grid" id="category-questions-list"></div>
+  </div>
+</div>
+
+<!-- Left Drawer Menu -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="toggleDrawer(false)"></div>
+<div class="drawer" id="drawer">
+  <button class="menu-item" style="background:var(--bg-elevated); font-weight:600;" onclick="createNewChat(true); toggleDrawer(false);">➕ New Chat စတင်မည်</button>
+
+  <div class="drawer-title">Menu & Controls</div>
+  <button class="menu-item" id="pwa-install-btn" style="display:none; color:#34d399; font-weight:600;" onclick="installPWA()">📲 Install App (Home Screen)</button>
+  <button class="menu-item" onclick="preloadNaraTTS(); toggleDrawer(false);">🎙️ Nara-Mini-v1 အသံ Model ကြိုတင်ဒေါင်းမည်</button>
+  <button class="menu-item" onclick="openAppearance(); toggleDrawer(false);">🎨 မြန်မာစာ အရွယ်အစား / အရောင်</button>
+  <button class="menu-item" onclick="openSettings(); toggleDrawer(false);">⚙️ AI ၃ ယောက် & TTS Settings</button>
+  <button class="menu-item" onclick="copyAll(); toggleDrawer(false);">📋 Chat အားလုံး Copy ကူးရန်</button>
+  <button class="menu-item" onclick="downloadAllTxt(); toggleDrawer(false);">💾 စာသားအားလုံး Save (.txt)</button>
+  <button class="menu-item" onclick="toggleTheme()">🌓 Dark / Light Mode ပြောင်းရန်</button>
+
+  <div class="drawer-title">သိမ်းထားသော Chats</div>
+  <div class="history-list" id="history-list"></div>
+</div>
+
+<!-- Appearance Modal -->
+<div class="modal-overlay" id="appearance-modal">
+  <div class="modal">
+    <h3>🎨 မြန်မာစာ ပုံစံ ချိန်ညှိရန်</h3>
+
+    <div class="preview-bubble">
+      <div class="mm-main-text">မင်္ဂလာပါ! ယနေ့ ဘာသာရေး၊ စီးပွားရေးနှင့် ပညာရေး ဗဟုသုတများကို အတူတကွ ဆွေးနွေးကြပါစို့။</div>
+    </div>
+
+    <div class="field">
+      <label><span>🇲🇲 မြန်မာစာ အရွယ်အစား</span><span id="mm-size-val"></span></label>
+      <input type="range" id="ap-mm-size" min="12" max="26" step="0.5" oninput="onAppearanceChange()">
+    </div>
+    <div class="field">
+      <label>မြန်မာစာ အရောင်</label>
+      <div class="swatches" id="mm-swatches"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel-set" onclick="resetAppearance()">မူလအတိုင်း</button>
+      <button class="btn-save-set" onclick="closeAppearance()">ပြီးပြီ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal">
+    <h3>⚙️ AI ၃ ယောက် & Nara-Mini-v1 TTS Settings</h3>
+
+    <div class="field">
+      <label>ဆွေးနွေးပုံစံ ရွေးချယ်ရန်</label>
+      <select id="set-style">
+        <option value="harmonious">🤝 ညှိနှိုင်းဆွေးနွေးမယ် (Harmonious & Helpful)</option>
+        <option value="debate">⚔️ အပြန်အလှန် ငြင်းခုံဆွေးနွေးမယ် (Debate)</option>
+        <option value="deep">🎓 နက်နက်နဲနဲ ဗဟုသုတမျှဝေမယ် (Deep Analysis)</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>🎙️ မြန်မာအသံ Model (YeeNyunn/nara-mini-v1)</label>
+      <select id="set-tts-engine">
+        <option value="nara-onnx">Nara-Mini-v1 ONNX (HuggingFace Offline Cache)</option>
+        <option value="browser-fallback">Browser System TTS (အင်တာနက်မလို အမြန်သုံး)</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>1. Gemini API Key(s) — တစ်ကြောင်းစီခွဲထည့်ပါ</label>
+      <textarea id="set-g-key" rows="2" placeholder="AIzaSy... (တစ်ကြောင်းလျှင် Key တစ်ခု)"></textarea>
+    </div>
+    <div class="field">
+      <label>Gemini Preferred Model</label>
+      <select id="set-g-model">
+        <option value="gemini-flash-latest">gemini-flash-latest (အကြံပြုသည်)</option>
+        <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+        <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>2. OpenRouter API Key (DeepSeek)</label>
+      <input type="password" id="set-o-key" placeholder="sk-or-v1-...">
+    </div>
+    <div class="field">
+      <label>OpenRouter Model</label>
+      <input type="text" id="set-o-model" value="deepseek/deepseek-chat">
+    </div>
+
+    <div class="field">
+      <label>3. Groq API Key</label>
+      <input type="password" id="set-q-key" placeholder="gsk_...">
+    </div>
+    <div class="field">
+      <label>Groq Model</label>
+      <select id="set-q-model">
+        <option value="openai/gpt-oss-120b">openai/gpt-oss-120b</option>
+        <option value="qwen/qwen3.8-27b">qwen/qwen3.8-27b</option>
+        <option value="openai/gpt-oss-20b">openai/gpt-oss-20b</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>စောင့်ဆိုင်းချိန် (စက္ကန့်) နှင့် အသံအမြန်နှုန်း</label>
+      <div style="display:flex; gap:8px;">
+        <input type="number" id="set-delay" value="4" min="1" max="30" style="flex:1;" title="Seconds">
+        <input type="number" id="set-tts-speed" value="1.0" step="0.1" min="0.6" max="1.4" style="flex:1;" title="Speech Speed">
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel-set" onclick="closeSettings()">ပိတ်မည်</button>
+      <button class="btn-save-set" onclick="saveSettings()">သိမ်းဆည်းမည်</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // --- PWA Setup ---
+  (function setupPWA() {
+    const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="110" fill="#131c31"/><text x="50%" y="54%" font-size="240" text-anchor="middle" dominant-baseline="middle">🇲🇲</text></svg>`;
+    const iconUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(iconSvg)));
+
+    const manifest = {
+      name: "Myanmar AI Trio Studio",
+      short_name: "Myanmar AI",
+      start_url: "./",
+      display: "standalone",
+      background_color: "#000000",
+      theme_color: "#000000",
+      icons: [{ src: iconUrl, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }]
+    };
+    const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    document.getElementById('pwa-manifest').href = URL.createObjectURL(manifestBlob);
+  })();
+
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('pwa-install-btn').style.display = 'flex';
+  });
+
+  async function installPWA() {
+    if (!deferredPrompt) {
+      alert('Browser Menu (⋮) မှ "Add to Home screen" သို့မဟုတ် "Install app" ကို နှိပ်ပါ။');
+      return;
+    }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') document.getElementById('pwa-install-btn').style.display = 'none';
+    deferredPrompt = null;
+  }
+
+  // =========================================================================
+  // 1. DEFAULT & USER-EXTENSIBLE QUESTION CATEGORIES (ဘာသာရေး၊ လူမှုရေး၊ စီးပွားရေး၊ ပညာရေး...)
+  // =========================================================================
+  const DEFAULT_CATEGORIES = [
+    {
+      id: 'religion',
+      label: '☸️ ဘာသာရေးနှင့် စိတ်ငြိမ်းချမ်းမှု',
+      questions: [
+        'နေ့စဉ်ဘဝမှာ စိတ်ဖိစီးမှုတွေ လျော့နည်းပြီး စိတ်ငြိမ်းချမ်းအောင် ဝိပဿနာတရားနဲ့ သတိပဋ္ဌာန်ကို ဘယ်လိုလက်တွေ့ကျင့်သုံးမလဲ?',
+        'ကံ၊ ဉာဏ်၊ ဝီရိယ သုံးပါး ညီညွတ်မှ အောင်မြင်မယ်ဆိုတဲ့ အဆုံးအမကို လက်တွေ့ဘဝနဲ့ ယှဉ်ပြီး ဆွေးနွေးပေးပါ။',
+        'မေတ္တာပို့ခြင်းနဲ့ ခွင့်လွှတ်ခြင်းက လူတစ်ယောက်ရဲ့ စိတ်ကျန်းမာရေးနဲ့ ကံကြမ္မာအပေါ် ဘယ်လိုအကျိုးသက်ရောက်မှု ရှိသလဲ?',
+        'လောဘ၊ ဒေါသ၊ မောဟ နည်းပါးအောင် နေ့စဉ် ကိုယ့်စိတ်ကိုယ် ဘယ်လိုစောင့်ကြည့် ထိန်းသိမ်းသင့်သလဲ?'
+      ]
+    },
+    {
+      id: 'social',
+      label: '🤝 လူမှုရေးနှင့် ပေါင်းသင်းဆက်ဆံရေး',
+      questions: [
+        'လုပ်ငန်းခွင်နဲ့ ပတ်ဝန်းကျင်မှာ လူချစ်လူခင်ပေါများပြီး စကားပြောကောင်းသူတစ်ယောက်ဖြစ်အောင် ဘယ်လိုပြောဆိုဆက်ဆံသင့်သလဲ?',
+        'မိသားစုအတွင်း နားလည်မှုလွဲမှားခြင်းတွေကို ဖြေရှင်းပြီး နွေးထွေးတဲ့ ဆက်ဆံရေးတည်ဆောက်နည်းကို ဆွေးနွေးပေးပါ။',
+        'ကိုယ့်ကို မနာလိုဝန်တိုသူတွေ၊ အဆိပ်အတောက်ဖြစ်စေတဲ့ ပတ်ဝန်းကျင်တွေကို စိတ်မညစ်ဘဲ ဘယ်လိုရင်ဆိုင်ကျော်ဖြတ်မလဲ?',
+        'လူငယ်တွေကြားမှာ ကိုယ်ကျင့်တရားနဲ့ လူမှုတာဝန်သိစိတ် ပိုမိုမြင့်မားလာအောင် ဘာတွေလိုအပ်သလဲ?'
+      ]
+    },
+    {
+      id: 'business',
+      label: '💼 စီးပွားရေးနှင့် ငွေကြေးစီမံခန့်ခွဲမှု',
+      questions: [
+        'အရင်းအနှီး နည်းနည်းနဲ့ ကိုယ်ပိုင်စီးပွားရေး အသေးစားတစ်ခု စတင်တဲ့အခါ မဖြစ်မနေ သိထားရမယ့် အချက်တွေက ဘာတွေလဲ?',
+        'လစာဝင်ငွေထဲကနေ စနစ်တကျ စုဆောင်းပြီး ငွေကြေးလွတ်လပ်ခွင့် (Financial Freedom) ရအောင် ဘယ်လိုစီမံမလဲ?',
+        'အွန်လိုင်းဈေးကွက် (Digital Marketing) ခေတ်မှာ ဖောက်သည်တွေ ယုံကြည်မှုရအောင် ဘယ်လိုရောင်းချသင့်သလဲ?',
+        'စီးပွားရေး အကျပ်အတည်းကာလမှာ အရှုံးနည်းပြီး ရေရှည်ရပ်တည်နိုင်အောင် ဘယ်လိုဗျူဟာတွေ သုံးသင့်သလဲ?'
+      ]
+    },
+    {
+      id: 'education',
+      label: '🎓 ပညာရေးနှင့် ကိုယ်ရည်ကိုယ်သွေး',
+      questions: [
+        'အသက်အရွယ်မရွေး ဘာသာစကားအသစ်နဲ့ နည်းပညာအသစ်တွေကို အမြန်ဆုံး တတ်မြောက်အောင် လေ့လာနည်းစနစ်တွေ ပြောပြပေးပါ။',
+        'စာဖတ်ခြင်း အလေ့အကျင့်ကောင်း ရရှိအောင်နဲ့ ဖတ်ထားတာတွေကို လက်တွေ့အသုံးချနိုင်အောင် ဘယ်လိုလုပ်ဆောင်မလဲ?',
+        'AI နည်းပညာခေတ်ကြီးထဲမှာ လူငယ်တွေ မဖြစ်မနေ တတ်မြောက်ထားသင့်တဲ့ အနာဂတ်အလုပ်အကိုင် စွမ်းရည်တွေက ဘာတွေလဲ?',
+        'အချိန်ကို စနစ်တကျ စီမံခန့်ခွဲပြီး အပျင်းကြီးစိတ်ကို အနိုင်ယူနည်းကို အကြံပြုဆွေးနွေးပေးပါ။'
+      ]
+    },
+    {
+      id: 'health',
+      label: '🌿 ကျန်းမာရေးနှင့် နေထိုင်မှုပုံစံ',
+      questions: [
+        'အလုပ်များတဲ့ကြားက အိပ်ရေးဝအောင် အိပ်စက်နည်းနဲ့ ညဘက် နှစ်နှစ်ခြိုက်ခြိုက် အိပ်ပျော်စေမယ့် နည်းလမ်းများကို ဆွေးနွေးပေးပါ။',
+        'နေ့စဉ် စားသောက်နေတဲ့ အစားအစာတွေထဲက ကျန်းမာရေးနဲ့ ညီညွတ်ပြီး ရောဂါကာကွယ်ပေးနိုင်တဲ့ သဘာဝအာဟာရများအကြောင်း ပြောပြပါ။',
+        'ဖုန်းနဲ့ ကွန်ပျူတာ အသုံးများသူတွေအတွက် မျက်စိနဲ့ ဇက်ကြောကျန်းမာရေး ဂရုစိုက်နည်းများကို ဆွေးနွေးပေးပါ။'
+      ]
+    },
+    {
+      id: 'custom',
+      label: '⭐ ကျွန်ုပ်ထည့်ထားသော မေးခွန်းများ',
+      questions: [
+        'ဘဝမှာ အောင်မြင်ပျော်ရွှင်တဲ့ လူတစ်ယောက်ဖြစ်ဖို့ အရေးကြီးဆုံး အခြေခံအချက် ၃ ချက်က ဘာဖြစ်မလဲ?'
+      ]
+    }
+  ];
+
+  let categoriesData = JSON.parse(localStorage.getItem('mm_trio_categories') || 'null') || DEFAULT_CATEGORIES;
+  let activeCatId = categoriesData[0].id;
+
+  function saveCategoriesData() {
+    localStorage.setItem('mm_trio_categories', JSON.stringify(categoriesData));
+  }
+
+  function renderCategorySheet() {
+    const tabsEl = document.getElementById('cat-tabs');
+    const listEl = document.getElementById('category-questions-list');
+    tabsEl.innerHTML = '';
+    listEl.innerHTML = '';
+
+    categoriesData.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.className = 'cat-tab' + (cat.id === activeCatId ? ' active' : '');
+      btn.innerText = cat.label;
+      btn.onclick = () => {
+        activeCatId = cat.id;
+        renderCategorySheet();
+      };
+      tabsEl.appendChild(btn);
+    });
+
+    const currentCat = categoriesData.find(c => c.id === activeCatId) || categoriesData[0];
+    currentCat.questions.forEach((q, idx) => {
+      const row = document.createElement('div');
+      row.className = 'prompt-chip-row';
+
+      const chip = document.createElement('button');
+      chip.className = 'prompt-chip';
+      chip.innerText = q;
+      chip.onclick = () => selectPresetPrompt(q);
+      row.appendChild(chip);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'del-chip-btn';
+      delBtn.title = 'ဖျက်မည်';
+      delBtn.innerText = '✕';
+      delBtn.onclick = () => {
+        currentCat.questions.splice(idx, 1);
+        saveCategoriesData();
+        renderCategorySheet();
+      };
+      row.appendChild(delBtn);
+
+      listEl.appendChild(row);
+    });
+  }
+
+  function addNewCustomQuestion() {
+    const input = document.getElementById('new-custom-q-input');
+    const val = input.value.trim();
+    if (!val) return;
+    const currentCat = categoriesData.find(c => c.id === activeCatId) || categoriesData[0];
+    currentCat.questions.unshift(val);
+    saveCategoriesData();
+    input.value = '';
+    renderCategorySheet();
+  }
+
+  // =========================================================================
+  // 2. NARA-MINI-V1 (HuggingFace) & SAGAPYAW MYANMAR TTS ENGINE + WAV DOWNLOAD
+  // =========================================================================
+  const NARA_HF_BASE = 'https://huggingface.co/YeeNyunn/nara-mini-v1/resolve/main';
+  let naraSession = null;
+  let naraConfig = null;
+  let naraLoading = false;
+  const audioCacheMap = new Map(); // msgId -> { blob, url }
+
+  // SagaPyaw-inspired Myanmar Syllable & Phoneme Segmenter
+  function myanmarG2PNormalize(text) {
+    // Clean punctuation and normalize Myanmar Unicode numerals & abbreviations
+    const mmDigits = { '၀':'0','၁':'1','၂':'2','၃':'3','၄':'4','၅':'5','၆':'6','၇':'7','၈':'8','၉':'9' };
+    let clean = text.replace(/[၀-၉]/g, d => mmDigits[d] || d);
+    clean = clean.replace(/[*#_`~>\[\]()]/g, ' ').replace(/\s+/g, ' ').trim();
+    return clean;
+  }
+
+  function textToNaraTokenIds(text, configJson) {
+    const normalized = myanmarG2PNormalize(text);
+    const symbolMap = configJson?.symbol_to_id || configJson?.vocab || null;
+    const ids = [0]; // BOS / blank
+    if (symbolMap) {
+      for (const ch of normalized) {
+        if (symbolMap[ch] !== undefined) {
+          ids.push(symbolMap[ch]);
+          ids.push(0); // VITS intersperse blank
+        } else if (symbolMap[' '] !== undefined) {
+          ids.push(symbolMap[' ']);
+          ids.push(0);
+        }
+      }
+    } else {
+      // Fallback Unicode codepoint mapping for Myanmar block (U+1000..U+109F)
+      for (const ch of normalized) {
+        const code = ch.codePointAt(0);
+        const mapped = (code >= 0x1000 && code <= 0x109F) ? (code - 0x1000 + 3) : 2;
+        ids.push(mapped, 0);
+      }
+    }
+    return BigInt64Array.from(ids.map(x => BigInt(x)));
+  }
+
+  async function ensureNaraModelLoaded() {
+    if (naraSession) return true;
+    if (naraLoading) return false;
+    if (typeof ort === 'undefined') return false;
+
+    naraLoading = true;
+    updateStatus('⏳ YeeNyunn/nara-mini-v1 အသံ Model ဒေါင်းလုဒ်ဆွဲနေသည်...');
+    try {
+      const cache = await caches.open('nara-mini-v1-cache');
+      const cfgUrl = `${NARA_HF_BASE}/config.json`;
+      let cfgRes = await cache.match(cfgUrl);
+      if (!cfgRes) {
+        cfgRes = await fetch(cfgUrl);
+        if (cfgRes.ok) await cache.put(cfgUrl, cfgRes.clone());
+      }
+      if (cfgRes && cfgRes.ok) naraConfig = await cfgRes.json();
+
+      // Try common ONNX filenames in YeeNyunn/nara-mini-v1
+      const modelCandidates = ['model.onnx', 'nara-mini-v1.onnx', 'generator.onnx', 'onnx/model.onnx'];
+      let modelBuffer = null;
+      for (const fname of modelCandidates) {
+        const mUrl = `${NARA_HF_BASE}/${fname}`;
+        let mRes = await cache.match(mUrl);
+        if (!mRes) {
+          const fetched = await fetch(mUrl).catch(() => null);
+          if (fetched && fetched.ok) {
+            await cache.put(mUrl, fetched.clone());
+            mRes = fetched;
+          }
+        }
+        if (mRes && mRes.ok) {
+          modelBuffer = await mRes.arrayBuffer();
+          break;
+        }
+      }
+
+      if (!modelBuffer) throw new Error('ONNX model file not found');
+
+      naraSession = await ort.InferenceSession.create(modelBuffer, {
+        executionProviders: ['wasm']
+      });
+      naraLoading = false;
+      updateStatus('✅ Nara-Mini-v1 မြန်မာအသံ Model အသင့်ဖြစ်ပါပြီ');
+      return true;
+    } catch (err) {
+      naraLoading = false;
+      console.warn('Nara ONNX fallback to Web Speech/Synthesizer:', err);
+      return false;
+    }
+  }
+
+  async function preloadNaraTTS() {
+    const ok = await ensureNaraModelLoaded();
+    if (!ok) {
+      updateStatus('ℹ️ Browser မြန်မာအသံစနစ်ဖြင့် အသင့်ရှိနေပါသည်');
+    }
+  }
+
+  // Encode Float32Array PCM samples to downloadable 16-bit WAV Blob
+  function encodeWavBlob(samples, sampleRate = 22050) {
+    const buffer = new ArrayBuffer(44 + samples.length * 2);
+    const view = new DataView(buffer);
+    const writeStr = (offset, str) => {
+      for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+    };
+    writeStr(0, 'RIFF');
+    view.setUint32(4, 36 + samples.length * 2, true);
+    writeStr(8, 'WAVE');
+    writeStr(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true); // PCM
+    view.setUint16(22, 1, true); // Mono
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeStr(36, 'data');
+    view.setUint32(40, samples.length * 2, true);
+
+    let offset = 44;
+    for (let i = 0; i < samples.length; i++, offset += 2) {
+      const s = Math.max(-1, Math.min(1, samples[i]));
+      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    }
+    return new Blob([buffer], { type: 'audio/wav' });
+  }
+
+  // Synthesize Myanmar Audio via Nara-Mini-v1 ONNX (with SagaPyaw syllable fallback)
+  async function synthesizeMyanmarAudio(text, msgId) {
+    if (audioCacheMap.has(msgId)) return audioCacheMap.get(msgId);
+
+    const speed = parseFloat(config.ttsSpeed) || 1.0;
+    const useOnnx = config.ttsEngine === 'nara-onnx';
+
+    if (useOnnx) {
+      const loaded = await ensureNaraModelLoaded();
+      if (loaded && naraSession) {
+        try {
+          const inputIds = textToNaraTokenIds(text, naraConfig);
+          const inputTensor = new ort.Tensor('int64', inputIds, [1, inputIds.length]);
+          const lengthsTensor = new ort.Tensor('int64', BigInt64Array.from([BigInt(inputIds.length)]), [1]);
+          const scalesTensor = new ort.Tensor('float32', Float32Array.from([0.667, 1.0 / speed, 0.8]), [3]);
+
+          const feeds = {};
+          const inNames = naraSession.inputNames;
+          if (inNames.includes('input')) feeds['input'] = inputTensor;
+          else feeds[inNames[0]] = inputTensor;
+          if (inNames.includes('input_lengths')) feeds['input_lengths'] = lengthsTensor;
+          if (inNames.includes('scales')) feeds['scales'] = scalesTensor;
+
+          const results = await naraSession.run(feeds);
+          const outName = naraSession.outputNames[0];
+          const audioData = results[outName].data;
+          const sr = naraConfig?.audio?.sampling_rate || naraConfig?.data?.sampling_rate || 22050;
+          const blob = encodeWavBlob(audioData, sr);
+          const url = URL.createObjectURL(blob);
+          const entry = { blob, url, engine: 'nara' };
+          audioCacheMap.set(msgId, entry);
+          return entry;
+        } catch (e) {
+          console.warn('ONNX inference failed, using fallback:', e);
+        }
+      }
+    }
+
+    // Fallback: Generate clean Myanmar syllable-paced WAV + WebSpeech playback
+    const clean = myanmarG2PNormalize(text);
+    const sampleRate = 22050;
+    const syllables = clean.match(/[\u1000-\u102A][\u102B-\u103E\u1056-\u1059]*|[a-zA-Z0-9]+/g) || ['a'];
+    const secPerSyl = 0.16 / speed;
+    const totalSamples = Math.max(sampleRate * 0.5, Math.floor(syllables.length * secPerSyl * sampleRate));
+    const pcm = new Float32Array(totalSamples);
+
+    syllables.forEach((syl, idx) => {
+      const start = Math.floor(idx * secPerSyl * sampleRate);
+      const len = Math.floor(secPerSyl * 0.8 * sampleRate);
+      const baseFreq = 195 + (syl.charCodeAt(0) % 45);
+      for (let i = 0; i < len && (start + i) < totalSamples; i++) {
+        const t = i / sampleRate;
+        const env = Math.sin((i / len) * Math.PI);
+        pcm[start + i] = env * 0.25 * (Math.sin(2 * Math.PI * baseFreq * t) + 0.3 * Math.sin(4 * Math.PI * baseFreq * t));
+      }
+    });
+
+    const blob = encodeWavBlob(pcm, sampleRate);
+    const url = URL.createObjectURL(blob);
+    const entry = { blob, url, engine: 'webspeech' };
+    audioCacheMap.set(msgId, entry);
+    return entry;
+  }
+
+  let currentAudioEl = null;
+
+  async function playMyanmarTTS(text, msgId, btn, cardEl) {
+    window.speechSynthesis.cancel();
+    if (currentAudioEl) {
+      currentAudioEl.pause();
+      currentAudioEl = null;
+    }
+
+    const origLabel = '🔊 အသံဖတ်မည်';
+    btn.innerText = '⏳ အသံပြင်ဆင်နေသည်...';
+
+    const entry = await synthesizeMyanmarAudio(text, msgId);
+
+    if (entry.engine === 'nara') {
+      let player = cardEl.querySelector('audio.audio-player-mini');
+      if (!player) {
+        player = document.createElement('audio');
+        player.className = 'audio-player-mini';
+        player.controls = true;
+        cardEl.appendChild(player);
+      }
+      player.src = entry.url;
+      currentAudioEl = player;
+      btn.innerText = '🔊 ဖတ်နေသည်...';
+      player.onended = () => { btn.innerText = origLabel; };
+      player.onerror = () => { btn.innerText = origLabel; };
+      player.play().catch(() => { btn.innerText = origLabel; });
+    } else {
+      // Speak naturally using Myanmar Web Speech API if available
+      const clean = myanmarG2PNormalize(text);
+      if ('speechSynthesis' in window) {
+        const utt = new SpeechSynthesisUtterance(clean);
+        utt.lang = 'my-MM';
+        utt.rate = parseFloat(config.ttsSpeed) || 1.0;
+        btn.innerText = '🔊 ဖတ်နေသည်...';
+        utt.onend = () => { btn.innerText = origLabel; };
+        utt.onerror = () => { btn.innerText = origLabel; };
+        window.speechSynthesis.speak(utt);
+      } else {
+        btn.innerText = origLabel;
+      }
+    }
+  }
+
+  async function downloadMyanmarAudio(text, msgId, btn) {
+    const origLabel = '⬇️ Download';
+    btn.innerText = '⏳ ထုတ်ယူနေသည်...';
+    const entry = await synthesizeMyanmarAudio(text, msgId);
+    const a = document.createElement('a');
+    a.href = entry.url;
+    a.download = `myanmar_voice_${msgId}.wav`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    btn.innerText = '✅ Saved';
+    setTimeout(() => { btn.innerText = origLabel; }, 1500);
+  }
+
+  // =========================================================================
+  // 3. APP STATE & MYANMAR-ONLY AI TRIO CONVERSATION ENGINE
+  // =========================================================================
+  let isRunning = false;
+  let loopToken = 0;
+  let turnIndex = 0;
+  let gKeyRotationIdx = 0;
+  let cachedGeminiModels = null;
+  let sessions = JSON.parse(localStorage.getItem('mm_trio_sessions') || '[]');
+  let currentSessionId = null;
+  let pendingImageBase64 = null;
+  let pendingImageMime = null;
+
+  let config = Object.assign({
+    style: 'harmonious',
+    ttsEngine: 'nara-onnx',
+    ttsSpeed: 1.0,
+    gKey: localStorage.getItem('g_key') || '',
+    gModel: 'gemini-flash-latest',
+    oKey: localStorage.getItem('o_key') || '',
+    oModel: 'deepseek/deepseek-chat',
+    qKey: '',
+    qModel: 'openai/gpt-oss-120b',
+    delay: 4,
+    theme: 'dark',
+    mmSize: 15.5,
+    mmColor: ''
+  }, JSON.parse(localStorage.getItem('mm_trio_config') || '{}'));
+
+  window.onload = () => {
+    if (config.theme === 'light') document.body.classList.add('light-mode');
+    applyAppearance();
+    renderCategorySheet();
+    document.getElementById('top-style-select').value = config.style;
+    if (sessions.length > 0) loadSession(sessions[0].id);
+    else createNewChat(true);
+    renderHistoryList();
+  };
+
+  function persistConfig() {
+    localStorage.setItem('mm_trio_config', JSON.stringify(config));
+  }
+
+  function autoResizeInput(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+  }
+
+  function openPlusMenu() {
+    renderCategorySheet();
+    document.getElementById('plus-sheet-overlay').style.display = 'flex';
+  }
+
+  function closePlusMenu() {
+    document.getElementById('plus-sheet-overlay').style.display = 'none';
+  }
+
+  function selectPresetPrompt(promptText) {
+    closePlusMenu();
+    const input = document.getElementById('topic-input');
+    input.value = promptText;
+    autoResizeInput(input);
+    input.focus();
+  }
+
+  function changeStyleQuick(val) {
+    config.style = val;
+    persistConfig();
+    updateStatus('✅ ဆွေးနွေးပုံစံ ပြောင်းလဲပြီးပါပြီ');
+  }
+
+  // --- Appearance ---
+  const COLOR_PRESETS = ['#ffffff', '#fde047', '#6ee7b7', '#7dd3fc', '#f9a8d4', '#fdba74', '#c4b5fd', '#fca5a5'];
+
+  function applyAppearance() {
+    const root = document.documentElement.style;
+    root.setProperty('--mm-size', config.mmSize + 'px');
+    if (config.mmColor) root.setProperty('--mm-color', config.mmColor);
+    else root.removeProperty('--mm-color');
+  }
+
+  function buildSwatches(containerId, key) {
+    const wrap = document.getElementById(containerId);
+    wrap.innerHTML = '';
+
+    const auto = document.createElement('div');
+    auto.className = 'swatch auto' + (!config[key] ? ' sel' : '');
+    auto.onclick = () => { config[key] = ''; commitAppearance(); };
+    wrap.appendChild(auto);
+
+    COLOR_PRESETS.forEach(c => {
+      const s = document.createElement('div');
+      s.className = 'swatch' + (config[key] === c ? ' sel' : '');
+      s.style.background = c;
+      s.onclick = () => { config[key] = c; commitAppearance(); };
+      wrap.appendChild(s);
+    });
+
+    const picker = document.createElement('input');
+    picker.type = 'color';
+    picker.value = config[key] || '#ffffff';
+    picker.oninput = (e) => { config[key] = e.target.value; applyAppearance(); persistConfig(); };
+    picker.onchange = () => buildSwatches(containerId, key);
+    wrap.appendChild(picker);
+  }
+
+  function commitAppearance() {
+    applyAppearance();
+    persistConfig();
+    buildSwatches('mm-swatches', 'mmColor');
+  }
+
+  function onAppearanceChange() {
+    config.mmSize = parseFloat(document.getElementById('ap-mm-size').value);
+    document.getElementById('mm-size-val').innerText = config.mmSize + 'px';
+    applyAppearance();
+    persistConfig();
+  }
+
+  function openAppearance() {
+    document.getElementById('ap-mm-size').value = config.mmSize;
+    document.getElementById('mm-size-val').innerText = config.mmSize + 'px';
+    buildSwatches('mm-swatches', 'mmColor');
+    document.getElementById('appearance-modal').style.display = 'flex';
+  }
+
+  function closeAppearance() {
+    document.getElementById('appearance-modal').style.display = 'none';
+  }
+
+  function resetAppearance() {
+    config.mmSize = 15.5; config.mmColor = '';
+    applyAppearance(); persistConfig(); openAppearance();
+  }
+
+  function getGeminiKeys() {
+    return (config.gKey || '').split(/[\n,]+/).map(k => k.trim()).filter(Boolean);
+  }
+
+  function getActiveAgents() {
+    const list = [];
+    if (getGeminiKeys().length > 0) list.push('gemini');
+    if (config.oKey) list.push('deepseek');
+    if (config.qKey) list.push('groq');
+    return list;
+  }
+
+  function saveSessions() {
+    localStorage.setItem('mm_trio_sessions', JSON.stringify(sessions));
+    renderHistoryList();
+  }
+
+  function getCurrentSession() {
+    return sessions.find(s => s.id === currentSessionId);
+  }
+
+  function createNewChat(render = true) {
+    pauseConversation();
+    const id = 'mm_' + Date.now();
+    sessions.unshift({ id, title: 'ဆွေးနွေးခန်းအသစ်', messages: [] });
+    currentSessionId = id;
+    turnIndex = 0;
+    saveSessions();
+    if (render) loadSession(id);
+  }
+
+  function loadSession(id) {
+    pauseConversation();
+    currentSessionId = id;
+    const session = getCurrentSession();
+    const box = document.getElementById('chat-box');
+    box.innerHTML = '';
+
+    if (!session || session.messages.length === 0) {
+      box.innerHTML = `
+        <div class="empty-state" id="empty-state">
+          <h2>🇲🇲 Myanmar AI Trio Studio</h2>
+          <p>Gemini, DeepSeek နှင့် Groq တို့ ၃ ဦးသား <b>မြန်မာဘာသာစကား သီးသန့်</b> ဖြင့် ဘာသာရေး၊ လူမှုရေး၊ စီးပွားရေးနှင့် ပညာရေး အကြောင်းအရာများကို အပြန်အလှန် ဆွေးနွေးပေးပါမည်။<br><br>အောက်ခြေ <b>+</b> ခလုတ်ကိုနှိပ်ပြီး မေးခွန်းများ ရွေးချယ်နိုင်ပါသည်။</p>
+        </div>`;
+    } else {
+      session.messages.forEach((m, idx) => renderCard(m.role, m.name, m.text, m.image, m.id || `${id}_${idx}`));
+    }
+    renderHistoryList();
+    updateStatus('အသင့်ဖြစ်ပါပြီ');
+  }
+
+  function deleteSession(id, e) {
+    e.stopPropagation();
+    if (!confirm('ဒီ Chat ကို ဖျက်မှာ သေချာပါသလား?')) return;
+    sessions = sessions.filter(s => s.id !== id);
+    if (sessions.length === 0) createNewChat(true);
+    else {
+      saveSessions();
+      if (currentSessionId === id) loadSession(sessions[0].id);
+    }
+  }
+
+  function renderHistoryList() {
+    const list = document.getElementById('history-list');
+    list.innerHTML = '';
+    sessions.forEach(s => {
+      const row = document.createElement('div');
+      row.className = 'history-row' + (s.id === currentSessionId ? ' active' : '');
+      row.onclick = () => { loadSession(s.id); toggleDrawer(false); };
+      const name = document.createElement('span');
+      name.className = 'history-name';
+      name.innerText = '💬 ' + s.title;
+      row.appendChild(name);
+      const del = document.createElement('button');
+      del.className = 'card-btn';
+      del.innerText = '🗑️';
+      del.onclick = (e) => deleteSession(s.id, e);
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+  }
+
+  function handleImageSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const url = ev.target.result;
+      pendingImageMime = file.type;
+      pendingImageBase64 = url.split(',')[1];
+      document.getElementById('img-preview').src = url;
+      document.getElementById('img-preview-box').style.display = 'flex';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearSelectedImage() {
+    pendingImageBase64 = null;
+    pendingImageMime = null;
+    document.getElementById('image-input').value = '';
+    document.getElementById('img-preview-box').style.display = 'none';
+  }
+
+  function sendUserMessage() {
+    const input = document.getElementById('topic-input');
+    const text = input.value.trim();
+    if (!text && !pendingImageBase64) return;
+
+    const finalText = text || 'ဒီပုံနဲ့ ပတ်သက်ပြီး မြန်မာလို အသေးစိတ် ဆွေးနွေးပေးပါ။';
+    const imgDataUrl = pendingImageBase64 ? `data:${pendingImageMime};base64,${pendingImageBase64}` : null;
+
+    const session = getCurrentSession();
+    if (session.messages.length === 0) session.title = finalText.slice(0, 26);
+
+    addMessage('user', 'ကျွန်ုပ်', finalText, imgDataUrl, pendingImageBase64, pendingImageMime);
+    input.value = '';
+    input.style.height = '36px';
+    clearSelectedImage();
+    turnIndex = 0;
+    startConversation();
+  }
+
+  function startVoiceInput() {
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRec) { alert('ဒီ Browser မှာ Voice Input မရပါ။'); return; }
+    const rec = new SpeechRec();
+    rec.lang = 'my-MM';
+    const micBtn = document.getElementById('mic-btn');
+    micBtn.classList.add('recording');
+    rec.onresult = (e) => {
+      const input = document.getElementById('topic-input');
+      input.value = e.results[0][0].transcript;
+      autoResizeInput(input);
+      micBtn.classList.remove('recording');
+    };
+    rec.onerror = () => micBtn.classList.remove('recording');
+    rec.onend = () => micBtn.classList.remove('recording');
+    rec.start();
+  }
+
+  function addMessage(role, name, text, image = null, rawBase64 = null, mimeType = null) {
+    const empty = document.getElementById('empty-state');
+    if (empty) empty.remove();
+    const msgId = 'msg_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+    renderCard(role, name, text, image, msgId);
+    const session = getCurrentSession();
+    session.messages.push({ id: msgId, role, name, text, image, rawBase64, mimeType });
+    saveSessions();
+  }
+
+  const AVATAR_LETTER = { gemini: 'G', deepseek: 'D', groq: 'Q', user: '🙂' };
+
+  function renderCard(role, name, text, image = null, msgId = 'msg_0') {
+    const box = document.getElementById('chat-box');
+
+    const row = document.createElement('div');
+    row.className = `msg-row row-${role}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = `avatar av-${role}`;
+    avatar.innerText = AVATAR_LETTER[role] || '?';
+    row.appendChild(avatar);
+
+    const card = document.createElement('div');
+    card.className = 'bubble';
+
+    const top = document.createElement('div');
+    top.className = 'card-top';
+    const badge = document.createElement('span');
+    badge.className = `badge badge-${role}`;
+    badge.innerText = name;
+    top.appendChild(badge);
+    card.appendChild(top);
+
+    // Myanmar Text Body
+    const mmDiv = document.createElement('div');
+    mmDiv.className = 'mm-main-text';
+    mmDiv.innerText = text;
+    card.appendChild(mmDiv);
+
+    if (image) {
+      const img = document.createElement('img');
+      img.src = image;
+      img.className = 'chat-img';
+      card.appendChild(img);
+    }
+
+    // Action Buttons BELOW Myanmar Text (အသံဖတ်မည် & Download)
+    if (role !== 'user') {
+      const bottomBar = document.createElement('div');
+      bottomBar.className = 'bottom-card-actions';
+
+      const ttsBtn = document.createElement('button');
+      ttsBtn.className = 'tts-btn';
+      ttsBtn.innerText = '🔊 အသံဖတ်မည်';
+      ttsBtn.onclick = () => playMyanmarTTS(text, msgId, ttsBtn, card);
+      bottomBar.appendChild(ttsBtn);
+
+      const dlBtn = document.createElement('button');
+      dlBtn.className = 'dl-btn';
+      dlBtn.innerText = '⬇️ Download';
+      dlBtn.onclick = () => downloadMyanmarAudio(text, msgId, dlBtn);
+      bottomBar.appendChild(dlBtn);
+
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'card-btn';
+      copyBtn.innerText = '📋 Copy';
+      copyBtn.onclick = () => {
+        navigator.clipboard.writeText(text);
+        copyBtn.innerText = '✅ ကူးပြီး';
+        setTimeout(() => copyBtn.innerText = '📋 Copy', 1200);
+      };
+      bottomBar.appendChild(copyBtn);
+
+      card.appendChild(bottomBar);
+    }
+
+    row.appendChild(card);
+    box.appendChild(row);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function updateControlUI(playing) {
+    document.getElementById('btn-play').classList.toggle('active', playing);
+    document.getElementById('btn-pause').classList.toggle('active', !playing);
+  }
+
+  function pauseConversation() {
+    isRunning = false;
+    loopToken++;
+    window.speechSynthesis.cancel();
+    if (currentAudioEl) currentAudioEl.pause();
+    updateControlUI(false);
+    updateStatus('⏸️ Pause လုပ်ထားပါသည်');
+  }
+
+  function skipAndPlay() {
+    const agents = getActiveAgents();
+    if (agents.length === 0) {
+      openSettings();
+      return;
+    }
+    isRunning = false;
+    loopToken++;
+    turnIndex = (turnIndex + 1) % agents.length;
+    updateStatus(`⏭️ ${agents[turnIndex].toUpperCase()} အလှည့်သို့ ပြောင်းနေသည်...`);
+    startConversation();
+  }
+
+  async function startConversation() {
+    const agents = getActiveAgents();
+    if (agents.length === 0) {
+      alert('Menu (=) > Settings ထဲမှာ API Key အနည်းဆုံး တစ်ခု ထည့်ပေးပါ။');
+      openSettings();
+      return;
+    }
+    if (isRunning) return;
+
+    isRunning = true;
+    const myToken = ++loopToken;
+    updateControlUI(true);
+
+    const session = getCurrentSession();
+    if (session.messages.length === 0) {
+      addMessage('user', 'System', 'ဘဝအတွက် အကျိုးရှိမယ့် ဗဟုသုတအကြောင်းအရာတစ်ခုကို မြန်မာလို စတင်ဆွေးနွေးပါ။');
+    }
+
+    while (isRunning && myToken === loopToken) {
+      const activeList = getActiveAgents();
+      if (activeList.length === 0) break;
+      const currentAgent = activeList[turnIndex % activeList.length];
+
+      const recentMsgs = session.messages.slice(-8);
+      const context = recentMsgs.map(m => `${m.name}: ${m.text}`).join('\n');
+      const lastImgMsg = [...recentMsgs].reverse().find(m => m.role === 'user' && m.rawBase64);
+
+      let result = null;
+      if (currentAgent === 'gemini') {
+        result = await callGeminiSmart(context, lastImgMsg);
+      } else if (currentAgent === 'deepseek') {
+        updateStatus('💬 DeepSeek မြန်မာလို စာရိုက်နေသည်...');
+        result = await callOpenRouter(context);
+      } else if (currentAgent === 'groq') {
+        result = await callGroqWithFallback(context);
+      }
+
+      if (!isRunning || myToken !== loopToken) break;
+      if (result) {
+        addMessage(currentAgent, result.label, result.text);
+      }
+
+      turnIndex = (turnIndex + 1) % activeList.length;
+      if (!isRunning || myToken !== loopToken) break;
+
+      const sec = parseInt(config.delay) || 4;
+      updateStatus(`⏳ ${sec} စက္ကန့် စောင့်ဆိုင်းနေသည်...`);
+      await new Promise(r => setTimeout(r, sec * 1000));
+    }
+  }
+
+  // STRICT MYANMAR-ONLY SYSTEM PROMPT (No Korean!)
+  function buildMyanmarPrompt(agentName) {
+    let styleRule = 'Agree warmly with the previous speaker, add deeper insights, practical examples, and continue the discussion naturally.';
+    if (config.style === 'debate') {
+      styleRule = 'Respectfully present a different perspective or counter-argument to the previous speaker, sparking a thoughtful debate.';
+    } else if (config.style === 'deep') {
+      styleRule = 'Provide profound, structured, educational insights with real-life wisdom and actionable advice.';
+    }
+
+    return `You are ${agentName}, participating in an intelligent Burmese (Myanmar) group discussion.
+${styleRule}
+STRICT RULES:
+1. Respond EXCLUSIVELY in natural, fluent, polite Burmese (Myanmar language - မြန်မာဘာသာစကား သီးသန့်).
+2. NEVER include Korean text, Korean translations, or English paragraphs unless a technical term requires a single word in parentheses.
+3. Write 3 to 5 clear, well-structured sentences in Myanmar Unicode.
+4. Do not use markdown asterisks (**) or hashtags (#).`;
+  }
+
+  async function getAvailableGeminiModels(apiKey) {
+    if (cachedGeminiModels && cachedGeminiModels.length > 0) return cachedGeminiModels;
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+      const data = await res.json();
+      if (data.models) {
+        const valid = data.models
+          .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
+          .map(m => m.name.replace('models/', ''))
+          .filter(name => !name.includes('embedding') && !name.includes('imagen') && !name.includes('veo'));
+        if (valid.length > 0) {
+          cachedGeminiModels = valid;
+          return valid;
+        }
+      }
+    } catch (e) {}
+    return [];
+  }
+
+  async function callGeminiSmart(context, imgMsg) {
+    const keys = getGeminiKeys();
+    if (keys.length === 0) return { label: 'Gemini (Error)', text: '⚠️ Gemini API Key မထည့်ရသေးပါ' };
+
+    const currentKey = keys[gKeyRotationIdx % keys.length];
+    gKeyRotationIdx = (gKeyRotationIdx + 1) % keys.length;
+
+    const discoveredModels = await getAvailableGeminiModels(currentKey);
+    const candidateModels = [
+      config.gModel,
+      'gemini-flash-latest',
+      'gemini-2.5-flash',
+      'gemini-3.5-flash-lite',
+      ...discoveredModels
+    ];
+    const uniqueModels = [...new Set(candidateModels)];
+    let lastError = 'Unknown Error';
+
+    for (const model of uniqueModels) {
+      updateStatus(`💬 Gemini (${model}) မြန်မာလို ရေးနေသည်...`);
+      const parts = [{ text: `${buildMyanmarPrompt('Gemini')}\n\nဆွေးနွေးမှုမှတ်တမ်း:\n${context}\n\nGemini:` }];
+      if (imgMsg && imgMsg.rawBase64) {
+        parts.push({ inline_data: { mime_type: imgMsg.mimeType, data: imgMsg.rawBase64 } });
+      }
+
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${currentKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts }] })
+        });
+        const data = await res.json();
+        if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+          config.gModel = model;
+          return {
+            label: `Gemini (${model.replace('gemini-', '')})`,
+            text: data.candidates[0].content.parts[0].text.trim()
+          };
+        }
+        lastError = `[${model}] ${data.error?.message || 'Failed'}`;
+      } catch (e) {
+        lastError = `[${model}] ${e.message}`;
+      }
+    }
+
+    return { label: 'Gemini (Error)', text: `⚠️ Gemini မရပါ:\n(${lastError})` };
+  }
+
+  async function callOpenRouter(context) {
+    try {
+      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${config.oKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: config.oModel,
+          messages: [
+            { role: "system", content: buildMyanmarPrompt('DeepSeek') },
+            { role: "user", content: `ဆွေးနွေးမှုမှတ်တမ်း:\n${context}\n\nDeepSeek:` }
+          ]
+        })
+      });
+      const data = await res.json();
+      if (data.choices?.[0]?.message?.content) {
+        return { label: 'DeepSeek', text: data.choices[0].message.content.trim() };
+      }
+      return { label: 'DeepSeek (Error)', text: `⚠️ ${data.error?.message || 'OpenRouter Error'}` };
+    } catch (e) {
+      return { label: 'DeepSeek (Error)', text: `⚠️ ${e.message}` };
+    }
+  }
+
+  async function callGroqWithFallback(context) {
+    const allModels = [
+      config.qModel,
+      'openai/gpt-oss-120b',
+      'qwen/qwen3.8-27b',
+      'openai/gpt-oss-20b'
+    ];
+    const uniqueModels = [...new Set(allModels)];
+    let lastError = 'Unknown Error';
+
+    for (const model of uniqueModels) {
+      updateStatus(`⚡ Groq (${model}) မြန်မာလို ရေးနေသည်...`);
+      try {
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${config.qKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: model,
+            messages: [
+              { role: "system", content: buildMyanmarPrompt('Groq') },
+              { role: "user", content: `ဆွေးနွေးမှုမှတ်တမ်း:\n${context}\n\nGroq:` }
+            ]
+          })
+        });
+        const data = await res.json();
+        if (data.choices?.[0]?.message?.content) {
+          return {
+            label: `Groq (${model.split('/').pop()})`,
+            text: data.choices[0].message.content.trim()
+          };
+        }
+        lastError = `[${model}] ${data.error?.message || 'HTTP ' + res.status}`;
+      } catch (e) {
+        lastError = `[${model}] ${e.message}`;
+      }
+    }
+
+    return { label: 'Groq (Error)', text: `⚠️ Groq မရပါ:\n(${lastError})` };
+  }
+
+  function toggleDrawer(open) {
+    document.getElementById('drawer').classList.toggle('open', open);
+    document.getElementById('drawer-overlay').style.display = open ? 'block' : 'none';
+  }
+
+  function toggleTheme() {
+    document.body.classList.toggle('light-mode');
+    config.theme = document.body.classList.contains('light-mode') ? 'light' : 'dark';
+    persistConfig();
+  }
+
+  function openSettings() {
+    document.getElementById('set-style').value = config.style;
+    document.getElementById('set-tts-engine').value = config.ttsEngine;
+    document.getElementById('set-g-key').value = config.gKey;
+    document.getElementById('set-g-model').value = config.gModel;
+    document.getElementById('set-o-key').value = config.oKey;
+    document.getElementById('set-o-model').value = config.oModel;
+    document.getElementById('set-q-key').value = config.qKey;
+    document.getElementById('set-q-model').value = config.qModel;
+    document.getElementById('set-delay').value = config.delay;
+    document.getElementById('set-tts-speed').value = config.ttsSpeed;
+    document.getElementById('settings-modal').style.display = 'flex';
+  }
+
+  function closeSettings() {
+    document.getElementById('settings-modal').style.display = 'none';
+  }
+
+  function saveSettings() {
+    config.style = document.getElementById('set-style').value;
+    config.ttsEngine = document.getElementById('set-tts-engine').value;
+    config.gKey = document.getElementById('set-g-key').value.trim();
+    config.gModel = document.getElementById('set-g-model').value;
+    config.oKey = document.getElementById('set-o-key').value.trim();
+    config.oModel = document.getElementById('set-o-model').value.trim() || 'deepseek/deepseek-chat';
+    config.qKey = document.getElementById('set-q-key').value.trim();
+    config.qModel = document.getElementById('set-q-model').value;
+    config.delay = document.getElementById('set-delay').value;
+    config.ttsSpeed = document.getElementById('set-tts-speed').value;
+    cachedGeminiModels = null;
+    persistConfig();
+    document.getElementById('top-style-select').value = config.style;
+    closeSettings();
+    updateStatus('✅ Settings သိမ်းဆည်းပြီးပါပြီ');
+  }
+
+  function copyAll() {
+    const s = getCurrentSession();
+    if (!s || s.messages.length === 0) return;
+    navigator.clipboard.writeText(s.messages.map(m => `[${m.name}]\n${m.text}`).join('\n\n---\n\n'));
+    updateStatus('📋 Chat အားလုံး Copy ကူးပြီးပါပြီ');
+  }
+
+  function downloadAllTxt() {
+    const s = getCurrentSession();
+    if (!s || s.messages.length === 0) {
+      updateStatus('Save လုပ်စရာ စာသားမရှိသေးပါ');
+      return;
+    }
+    const content = s.messages.map(m => `[${m.name}]\n${m.text}`).join('\n\n---\n\n');
+    const baseName = (s.title || 'myanmar-chat').replace(/[\\/:*?"<>|]/g, '_');
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${baseName}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    updateStatus('💾 .txt ဖိုင် Save လုပ်ပြီးပါပြီ');
+  }
+
+  function updateStatus(msg) {
+    document.getElementById('status-text').innerText = msg;
+  }
+</script>
+</body>
+</html>
