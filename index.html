@@ -9,7 +9,6 @@
   <title>Myanmar AI Trio Studio</title>
 
   <link rel="manifest" id="pwa-manifest">
-  <!-- ONNX Runtime Web for YeeNyunn/nara-mini-v1 -->
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js"></script>
 
   <style>
@@ -243,6 +242,8 @@
       padding: 5px 10px;
       border-radius: 999px;
       cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
     body.light-mode .card-btn { background: rgba(0,0,0,0.07); }
     .audio-player-mini {
@@ -333,12 +334,12 @@
       border-radius: 24px 24px 0 0;
       width: 100%;
       max-width: 560px;
-      max-height: 85vh;
+      max-height: 86vh;
       overflow-y: auto;
       padding: 14px 16px 28px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 12px;
       animation: slideUp 0.22s ease;
     }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -349,34 +350,33 @@
       margin: 0 auto 2px;
     }
     .sheet-header {
-      display: flex; align-items: center; justify-content: space-between;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
     }
-    .sheet-header h3 { font-size: 16px; }
+    .sheet-header h3 { font-size: 15.5px; line-height: 1.4; }
 
-    /* Category Tabs */
+    /* Fixed Category Tabs Grid/Wrap so all buttons & Myanmar text show cleanly */
     .cat-tabs {
       display: flex;
-      gap: 6px;
-      overflow-x: auto;
-      padding-bottom: 4px;
-      scrollbar-width: none;
+      flex-wrap: wrap;
+      gap: 7px;
+      padding: 2px 0;
     }
-    .cat-tabs::-webkit-scrollbar { display: none; }
     .cat-tab {
-      padding: 7px 13px;
-      border-radius: 999px;
+      padding: 8px 12px;
+      border-radius: 12px;
       background: var(--bg-elevated);
       border: 1px solid var(--border);
-      color: var(--text-sub);
-      font-size: 12.5px;
+      color: var(--text-main);
+      font-size: 13px;
       font-weight: 600;
-      white-space: nowrap;
+      line-height: 1.4;
       cursor: pointer;
     }
     .cat-tab.active {
       background: var(--accent-blue);
       border-color: var(--accent-blue);
       color: #fff;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
     }
 
     /* Custom Question Add Box */
@@ -771,12 +771,12 @@
   }
 
   // =========================================================================
-  // 1. DEFAULT & USER-EXTENSIBLE QUESTION CATEGORIES (ဘာသာရေး၊ လူမှုရေး၊ စီးပွားရေး၊ ပညာရေး...)
+  // 1. DEFAULT & USER-EXTENSIBLE QUESTION CATEGORIES
   // =========================================================================
   const DEFAULT_CATEGORIES = [
     {
       id: 'religion',
-      label: '☸️ ဘာသာရေးနှင့် စိတ်ငြိမ်းချမ်းမှု',
+      label: '☸️ ဘာသာရေး',
       questions: [
         'နေ့စဉ်ဘဝမှာ စိတ်ဖိစီးမှုတွေ လျော့နည်းပြီး စိတ်ငြိမ်းချမ်းအောင် ဝိပဿနာတရားနဲ့ သတိပဋ္ဌာန်ကို ဘယ်လိုလက်တွေ့ကျင့်သုံးမလဲ?',
         'ကံ၊ ဉာဏ်၊ ဝီရိယ သုံးပါး ညီညွတ်မှ အောင်မြင်မယ်ဆိုတဲ့ အဆုံးအမကို လက်တွေ့ဘဝနဲ့ ယှဉ်ပြီး ဆွေးနွေးပေးပါ။',
@@ -786,7 +786,7 @@
     },
     {
       id: 'social',
-      label: '🤝 လူမှုရေးနှင့် ပေါင်းသင်းဆက်ဆံရေး',
+      label: '🤝 လူမှုရေး',
       questions: [
         'လုပ်ငန်းခွင်နဲ့ ပတ်ဝန်းကျင်မှာ လူချစ်လူခင်ပေါများပြီး စကားပြောကောင်းသူတစ်ယောက်ဖြစ်အောင် ဘယ်လိုပြောဆိုဆက်ဆံသင့်သလဲ?',
         'မိသားစုအတွင်း နားလည်မှုလွဲမှားခြင်းတွေကို ဖြေရှင်းပြီး နွေးထွေးတဲ့ ဆက်ဆံရေးတည်ဆောက်နည်းကို ဆွေးနွေးပေးပါ။',
@@ -796,7 +796,7 @@
     },
     {
       id: 'business',
-      label: '💼 စီးပွားရေးနှင့် ငွေကြေးစီမံခန့်ခွဲမှု',
+      label: '💼 စီးပွားရေး',
       questions: [
         'အရင်းအနှီး နည်းနည်းနဲ့ ကိုယ်ပိုင်စီးပွားရေး အသေးစားတစ်ခု စတင်တဲ့အခါ မဖြစ်မနေ သိထားရမယ့် အချက်တွေက ဘာတွေလဲ?',
         'လစာဝင်ငွေထဲကနေ စနစ်တကျ စုဆောင်းပြီး ငွေကြေးလွတ်လပ်ခွင့် (Financial Freedom) ရအောင် ဘယ်လိုစီမံမလဲ?',
@@ -806,7 +806,7 @@
     },
     {
       id: 'education',
-      label: '🎓 ပညာရေးနှင့် ကိုယ်ရည်ကိုယ်သွေး',
+      label: '🎓 ပညာရေး',
       questions: [
         'အသက်အရွယ်မရွေး ဘာသာစကားအသစ်နဲ့ နည်းပညာအသစ်တွေကို အမြန်ဆုံး တတ်မြောက်အောင် လေ့လာနည်းစနစ်တွေ ပြောပြပေးပါ။',
         'စာဖတ်ခြင်း အလေ့အကျင့်ကောင်း ရရှိအောင်နဲ့ ဖတ်ထားတာတွေကို လက်တွေ့အသုံးချနိုင်အောင် ဘယ်လိုလုပ်ဆောင်မလဲ?',
@@ -816,7 +816,7 @@
     },
     {
       id: 'health',
-      label: '🌿 ကျန်းမာရေးနှင့် နေထိုင်မှုပုံစံ',
+      label: '🌿 ကျန်းမာရေး',
       questions: [
         'အလုပ်များတဲ့ကြားက အိပ်ရေးဝအောင် အိပ်စက်နည်းနဲ့ ညဘက် နှစ်နှစ်ခြိုက်ခြိုက် အိပ်ပျော်စေမယ့် နည်းလမ်းများကို ဆွေးနွေးပေးပါ။',
         'နေ့စဉ် စားသောက်နေတဲ့ အစားအစာတွေထဲက ကျန်းမာရေးနဲ့ ညီညွတ်ပြီး ရောဂါကာကွယ်ပေးနိုင်တဲ့ သဘာဝအာဟာရများအကြောင်း ပြောပြပါ။',
@@ -825,18 +825,18 @@
     },
     {
       id: 'custom',
-      label: '⭐ ကျွန်ုပ်ထည့်ထားသော မေးခွန်းများ',
+      label: '⭐ ကိုယ်ပိုင်မေးခွန်း',
       questions: [
         'ဘဝမှာ အောင်မြင်ပျော်ရွှင်တဲ့ လူတစ်ယောက်ဖြစ်ဖို့ အရေးကြီးဆုံး အခြေခံအချက် ၃ ချက်က ဘာဖြစ်မလဲ?'
       ]
     }
   ];
 
-  let categoriesData = JSON.parse(localStorage.getItem('mm_trio_categories') || 'null') || DEFAULT_CATEGORIES;
+  let categoriesData = JSON.parse(localStorage.getItem('mm_trio_categories_v2') || 'null') || DEFAULT_CATEGORIES;
   let activeCatId = categoriesData[0].id;
 
   function saveCategoriesData() {
-    localStorage.setItem('mm_trio_categories', JSON.stringify(categoriesData));
+    localStorage.setItem('mm_trio_categories_v2', JSON.stringify(categoriesData));
   }
 
   function renderCategorySheet() {
@@ -900,11 +900,9 @@
   let naraSession = null;
   let naraConfig = null;
   let naraLoading = false;
-  const audioCacheMap = new Map(); // msgId -> { blob, url }
+  const audioCacheMap = new Map();
 
-  // SagaPyaw-inspired Myanmar Syllable & Phoneme Segmenter
   function myanmarG2PNormalize(text) {
-    // Clean punctuation and normalize Myanmar Unicode numerals & abbreviations
     const mmDigits = { '၀':'0','၁':'1','၂':'2','၃':'3','၄':'4','၅':'5','၆':'6','၇':'7','၈':'8','၉':'9' };
     let clean = text.replace(/[၀-၉]/g, d => mmDigits[d] || d);
     clean = clean.replace(/[*#_`~>\[\]()]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -914,19 +912,16 @@
   function textToNaraTokenIds(text, configJson) {
     const normalized = myanmarG2PNormalize(text);
     const symbolMap = configJson?.symbol_to_id || configJson?.vocab || null;
-    const ids = [0]; // BOS / blank
+    const ids = [0];
     if (symbolMap) {
       for (const ch of normalized) {
         if (symbolMap[ch] !== undefined) {
-          ids.push(symbolMap[ch]);
-          ids.push(0); // VITS intersperse blank
+          ids.push(symbolMap[ch], 0);
         } else if (symbolMap[' '] !== undefined) {
-          ids.push(symbolMap[' ']);
-          ids.push(0);
+          ids.push(symbolMap[' '], 0);
         }
       }
     } else {
-      // Fallback Unicode codepoint mapping for Myanmar block (U+1000..U+109F)
       for (const ch of normalized) {
         const code = ch.codePointAt(0);
         const mapped = (code >= 0x1000 && code <= 0x109F) ? (code - 0x1000 + 3) : 2;
@@ -953,7 +948,6 @@
       }
       if (cfgRes && cfgRes.ok) naraConfig = await cfgRes.json();
 
-      // Try common ONNX filenames in YeeNyunn/nara-mini-v1
       const modelCandidates = ['model.onnx', 'nara-mini-v1.onnx', 'generator.onnx', 'onnx/model.onnx'];
       let modelBuffer = null;
       for (const fname of modelCandidates) {
@@ -982,7 +976,6 @@
       return true;
     } catch (err) {
       naraLoading = false;
-      console.warn('Nara ONNX fallback to Web Speech/Synthesizer:', err);
       return false;
     }
   }
@@ -994,7 +987,6 @@
     }
   }
 
-  // Encode Float32Array PCM samples to downloadable 16-bit WAV Blob
   function encodeWavBlob(samples, sampleRate = 22050) {
     const buffer = new ArrayBuffer(44 + samples.length * 2);
     const view = new DataView(buffer);
@@ -1006,8 +998,8 @@
     writeStr(8, 'WAVE');
     writeStr(12, 'fmt ');
     view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true); // PCM
-    view.setUint16(22, 1, true); // Mono
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
     view.setUint32(24, sampleRate, true);
     view.setUint32(28, sampleRate * 2, true);
     view.setUint16(32, 2, true);
@@ -1023,7 +1015,6 @@
     return new Blob([buffer], { type: 'audio/wav' });
   }
 
-  // Synthesize Myanmar Audio via Nara-Mini-v1 ONNX (with SagaPyaw syllable fallback)
   async function synthesizeMyanmarAudio(text, msgId) {
     if (audioCacheMap.has(msgId)) return audioCacheMap.get(msgId);
 
@@ -1055,13 +1046,10 @@
           const entry = { blob, url, engine: 'nara' };
           audioCacheMap.set(msgId, entry);
           return entry;
-        } catch (e) {
-          console.warn('ONNX inference failed, using fallback:', e);
-        }
+        } catch (e) {}
       }
     }
 
-    // Fallback: Generate clean Myanmar syllable-paced WAV + WebSpeech playback
     const clean = myanmarG2PNormalize(text);
     const sampleRate = 22050;
     const syllables = clean.match(/[\u1000-\u102A][\u102B-\u103E\u1056-\u1059]*|[a-zA-Z0-9]+/g) || ['a'];
@@ -1116,7 +1104,6 @@
       player.onerror = () => { btn.innerText = origLabel; };
       player.play().catch(() => { btn.innerText = origLabel; });
     } else {
-      // Speak naturally using Myanmar Web Speech API if available
       const clean = myanmarG2PNormalize(text);
       if ('speechSynthesis' in window) {
         const utt = new SpeechSynthesisUtterance(clean);
@@ -1217,7 +1204,6 @@
     updateStatus('✅ ဆွေးနွေးပုံစံ ပြောင်းလဲပြီးပါပြီ');
   }
 
-  // --- Appearance ---
   const COLOR_PRESETS = ['#ffffff', '#fde047', '#6ee7b7', '#7dd3fc', '#f9a8d4', '#fdba74', '#c4b5fd', '#fca5a5'];
 
   function applyAppearance() {
@@ -1455,7 +1441,6 @@
     top.appendChild(badge);
     card.appendChild(top);
 
-    // Myanmar Text Body
     const mmDiv = document.createElement('div');
     mmDiv.className = 'mm-main-text';
     mmDiv.innerText = text;
@@ -1468,7 +1453,6 @@
       card.appendChild(img);
     }
 
-    // Action Buttons BELOW Myanmar Text (အသံဖတ်မည် & Download)
     if (role !== 'user') {
       const bottomBar = document.createElement('div');
       bottomBar.className = 'bottom-card-actions';
@@ -1581,7 +1565,6 @@
     }
   }
 
-  // STRICT MYANMAR-ONLY SYSTEM PROMPT (No Korean!)
   function buildMyanmarPrompt(agentName) {
     let styleRule = 'Agree warmly with the previous speaker, add deeper insights, practical examples, and continue the discussion naturally.';
     if (config.style === 'debate') {
