@@ -9,7 +9,6 @@
   <title>Myanmar AI Trio Studio</title>
 
   <link rel="manifest" id="pwa-manifest">
-  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js"></script>
 
   <style>
     :root {
@@ -319,7 +318,7 @@
       box-shadow: 0 2px 8px rgba(37, 99, 235, 0.45);
     }
 
-    /* ---------- Plus Menu Bottom Sheet (Categories & Custom Questions) ---------- */
+    /* ---------- Plus Menu Bottom Sheet ---------- */
     .sheet-overlay {
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.75);
@@ -354,7 +353,6 @@
     }
     .sheet-header h3 { font-size: 15.5px; line-height: 1.4; }
 
-    /* Fixed Category Tabs Grid/Wrap so all buttons & Myanmar text show cleanly */
     .cat-tabs {
       display: flex;
       flex-wrap: wrap;
@@ -379,7 +377,6 @@
       box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
     }
 
-    /* Custom Question Add Box */
     .add-custom-box {
       display: flex;
       gap: 6px;
@@ -545,7 +542,7 @@
   </div>
 </div>
 
-<!-- Status & TTS Model Status -->
+<!-- Status & Style Selector -->
 <div class="sub-bar">
   <div class="status-line" id="status-text">🇲🇲 မြန်မာ AI ၃ ဦး အသင့်ဖြစ်ပါပြီ</div>
   <select class="level-pill" id="top-style-select" onchange="changeStyleQuick(this.value)" title="ဆွေးနွေးပုံစံ">
@@ -590,7 +587,7 @@
   </div>
 </div>
 
-<!-- Plus Menu Bottom Sheet (Categories + User Custom Questions) -->
+<!-- Plus Menu Bottom Sheet -->
 <div class="sheet-overlay" id="plus-sheet-overlay" onclick="if(event.target===this) closePlusMenu()">
   <div class="bottom-sheet">
     <div class="sheet-handle"></div>
@@ -599,21 +596,17 @@
       <button class="card-btn" onclick="closePlusMenu()">✕ ပိတ်မည်</button>
     </div>
 
-    <!-- Image Upload Option -->
     <button class="menu-item" style="background:var(--bg-elevated); border:1px solid var(--border); font-weight:600;" onclick="closePlusMenu(); document.getElementById('image-input').click();">
       🖼️ ဖုန်းထဲမှ ပုံတင်ပြီး မြန်မာလို ဆွေးနွေးမည်
     </button>
 
-    <!-- Category Tabs -->
     <div class="cat-tabs" id="cat-tabs"></div>
 
-    <!-- User Add New Question Box -->
     <div class="add-custom-box">
       <input type="text" id="new-custom-q-input" placeholder="လက်ရှိကဏ္ဍထဲ မေးခွန်းအသစ် ရိုက်ထည့်ပါ..." onkeydown="if(event.key==='Enter') addNewCustomQuestion()">
       <button class="add-custom-btn" onclick="addNewCustomQuestion()">+ အသစ်ထည့်</button>
     </div>
 
-    <!-- Questions List -->
     <div class="chip-grid" id="category-questions-list"></div>
   </div>
 </div>
@@ -625,9 +618,8 @@
 
   <div class="drawer-title">Menu & Controls</div>
   <button class="menu-item" id="pwa-install-btn" style="display:none; color:#34d399; font-weight:600;" onclick="installPWA()">📲 Install App (Home Screen)</button>
-  <button class="menu-item" onclick="preloadNaraTTS(); toggleDrawer(false);">🎙️ Nara-Mini-v1 အသံ Model ကြိုတင်ဒေါင်းမည်</button>
   <button class="menu-item" onclick="openAppearance(); toggleDrawer(false);">🎨 မြန်မာစာ အရွယ်အစား / အရောင်</button>
-  <button class="menu-item" onclick="openSettings(); toggleDrawer(false);">⚙️ AI ၃ ယောက် & TTS Settings</button>
+  <button class="menu-item" onclick="openSettings(); toggleDrawer(false);">⚙️ AI ၃ ယောက် & Edge TTS Settings</button>
   <button class="menu-item" onclick="copyAll(); toggleDrawer(false);">📋 Chat အားလုံး Copy ကူးရန်</button>
   <button class="menu-item" onclick="downloadAllTxt(); toggleDrawer(false);">💾 စာသားအားလုံး Save (.txt)</button>
   <button class="menu-item" onclick="toggleTheme()">🌓 Dark / Light Mode ပြောင်းရန်</button>
@@ -664,7 +656,7 @@
 <!-- Settings Modal -->
 <div class="modal-overlay" id="settings-modal">
   <div class="modal">
-    <h3>⚙️ AI ၃ ယောက် & Nara-Mini-v1 TTS Settings</h3>
+    <h3>⚙️ AI ၃ ယောက် & Edge TTS Settings</h3>
 
     <div class="field">
       <label>ဆွေးနွေးပုံစံ ရွေးချယ်ရန်</label>
@@ -676,10 +668,15 @@
     </div>
 
     <div class="field">
-      <label>🎙️ မြန်မာအသံ Model (YeeNyunn/nara-mini-v1)</label>
-      <select id="set-tts-engine">
-        <option value="nara-onnx">Nara-Mini-v1 ONNX (HuggingFace Offline Cache)</option>
-        <option value="browser-fallback">Browser System TTS (အင်တာနက်မလို အမြန်သုံး)</option>
+      <label>🎙️ Cloudflare Worker URL (Edge TTS Proxy)</label>
+      <input type="url" id="set-tts-worker" placeholder="https://myanmar-tts.xxxx.workers.dev">
+    </div>
+
+    <div class="field">
+      <label>🗣️ မြန်မာအသံ ရွေးချယ်ရန် (Edge TTS Voice)</label>
+      <select id="set-tts-voice">
+        <option value="my-MM-NilarNeural">👩 Nilar (မြန်မာ အမျိုးသမီးအသံ)</option>
+        <option value="my-MM-ThihaNeural">👨 Thiha (မြန်မာ အမျိုးသားအသံ)</option>
       </select>
     </div>
 
@@ -722,7 +719,7 @@
       <label>စောင့်ဆိုင်းချိန် (စက္ကန့်) နှင့် အသံအမြန်နှုန်း</label>
       <div style="display:flex; gap:8px;">
         <input type="number" id="set-delay" value="4" min="1" max="30" style="flex:1;" title="Seconds">
-        <input type="number" id="set-tts-speed" value="1.0" step="0.1" min="0.6" max="1.4" style="flex:1;" title="Speech Speed">
+        <input type="number" id="set-tts-speed" value="1.0" step="0.1" min="0.6" max="1.5" style="flex:1;" title="Speech Speed">
       </div>
     </div>
 
@@ -894,188 +891,53 @@
   }
 
   // =========================================================================
-  // 2. NARA-MINI-V1 (HuggingFace) & SAGAPYAW MYANMAR TTS ENGINE + WAV DOWNLOAD
+  // 2. CLOUDFLARE WORKER + MICROSOFT EDGE TTS ENGINE + MP3 DOWNLOAD
   // =========================================================================
-  const NARA_HF_BASE = 'https://huggingface.co/YeeNyunn/nara-mini-v1/resolve/main';
-  let naraSession = null;
-  let naraConfig = null;
-  let naraLoading = false;
   const audioCacheMap = new Map();
+  let currentAudioEl = null;
 
-  function myanmarG2PNormalize(text) {
-    const mmDigits = { '၀':'0','၁':'1','၂':'2','၃':'3','၄':'4','၅':'5','၆':'6','၇':'7','၈':'8','၉':'9' };
-    let clean = text.replace(/[၀-၉]/g, d => mmDigits[d] || d);
-    clean = clean.replace(/[*#_`~>\[\]()]/g, ' ').replace(/\s+/g, ' ').trim();
-    return clean;
+  function cleanTextForSpeech(text) {
+    return text.replace(/[*#_`~>\[\]()]/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
-  function textToNaraTokenIds(text, configJson) {
-    const normalized = myanmarG2PNormalize(text);
-    const symbolMap = configJson?.symbol_to_id || configJson?.vocab || null;
-    const ids = [0];
-    if (symbolMap) {
-      for (const ch of normalized) {
-        if (symbolMap[ch] !== undefined) {
-          ids.push(symbolMap[ch], 0);
-        } else if (symbolMap[' '] !== undefined) {
-          ids.push(symbolMap[' '], 0);
-        }
-      }
-    } else {
-      for (const ch of normalized) {
-        const code = ch.codePointAt(0);
-        const mapped = (code >= 0x1000 && code <= 0x109F) ? (code - 0x1000 + 3) : 2;
-        ids.push(mapped, 0);
-      }
-    }
-    return BigInt64Array.from(ids.map(x => BigInt(x)));
+  function speedToEdgeRate(speed) {
+    const s = parseFloat(speed) || 1.0;
+    const pct = Math.round((s - 1.0) * 100);
+    return (pct >= 0 ? `+${pct}%` : `${pct}%`);
   }
 
-  async function ensureNaraModelLoaded() {
-    if (naraSession) return true;
-    if (naraLoading) return false;
-    if (typeof ort === 'undefined') return false;
-
-    naraLoading = true;
-    updateStatus('⏳ YeeNyunn/nara-mini-v1 အသံ Model ဒေါင်းလုဒ်ဆွဲနေသည်...');
-    try {
-      const cache = await caches.open('nara-mini-v1-cache');
-      const cfgUrl = `${NARA_HF_BASE}/config.json`;
-      let cfgRes = await cache.match(cfgUrl);
-      if (!cfgRes) {
-        cfgRes = await fetch(cfgUrl);
-        if (cfgRes.ok) await cache.put(cfgUrl, cfgRes.clone());
-      }
-      if (cfgRes && cfgRes.ok) naraConfig = await cfgRes.json();
-
-      const modelCandidates = ['model.onnx', 'nara-mini-v1.onnx', 'generator.onnx', 'onnx/model.onnx'];
-      let modelBuffer = null;
-      for (const fname of modelCandidates) {
-        const mUrl = `${NARA_HF_BASE}/${fname}`;
-        let mRes = await cache.match(mUrl);
-        if (!mRes) {
-          const fetched = await fetch(mUrl).catch(() => null);
-          if (fetched && fetched.ok) {
-            await cache.put(mUrl, fetched.clone());
-            mRes = fetched;
-          }
-        }
-        if (mRes && mRes.ok) {
-          modelBuffer = await mRes.arrayBuffer();
-          break;
-        }
-      }
-
-      if (!modelBuffer) throw new Error('ONNX model file not found');
-
-      naraSession = await ort.InferenceSession.create(modelBuffer, {
-        executionProviders: ['wasm']
-      });
-      naraLoading = false;
-      updateStatus('✅ Nara-Mini-v1 မြန်မာအသံ Model အသင့်ဖြစ်ပါပြီ');
-      return true;
-    } catch (err) {
-      naraLoading = false;
-      return false;
-    }
-  }
-
-  async function preloadNaraTTS() {
-    const ok = await ensureNaraModelLoaded();
-    if (!ok) {
-      updateStatus('ℹ️ Browser မြန်မာအသံစနစ်ဖြင့် အသင့်ရှိနေပါသည်');
-    }
-  }
-
-  function encodeWavBlob(samples, sampleRate = 22050) {
-    const buffer = new ArrayBuffer(44 + samples.length * 2);
-    const view = new DataView(buffer);
-    const writeStr = (offset, str) => {
-      for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
-    };
-    writeStr(0, 'RIFF');
-    view.setUint32(4, 36 + samples.length * 2, true);
-    writeStr(8, 'WAVE');
-    writeStr(12, 'fmt ');
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true);
-    view.setUint16(22, 1, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate * 2, true);
-    view.setUint16(32, 2, true);
-    view.setUint16(34, 16, true);
-    writeStr(36, 'data');
-    view.setUint32(40, samples.length * 2, true);
-
-    let offset = 44;
-    for (let i = 0; i < samples.length; i++, offset += 2) {
-      const s = Math.max(-1, Math.min(1, samples[i]));
-      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-    }
-    return new Blob([buffer], { type: 'audio/wav' });
-  }
-
-  async function synthesizeMyanmarAudio(text, msgId) {
-    if (audioCacheMap.has(msgId)) return audioCacheMap.get(msgId);
-
-    const speed = parseFloat(config.ttsSpeed) || 1.0;
-    const useOnnx = config.ttsEngine === 'nara-onnx';
-
-    if (useOnnx) {
-      const loaded = await ensureNaraModelLoaded();
-      if (loaded && naraSession) {
-        try {
-          const inputIds = textToNaraTokenIds(text, naraConfig);
-          const inputTensor = new ort.Tensor('int64', inputIds, [1, inputIds.length]);
-          const lengthsTensor = new ort.Tensor('int64', BigInt64Array.from([BigInt(inputIds.length)]), [1]);
-          const scalesTensor = new ort.Tensor('float32', Float32Array.from([0.667, 1.0 / speed, 0.8]), [3]);
-
-          const feeds = {};
-          const inNames = naraSession.inputNames;
-          if (inNames.includes('input')) feeds['input'] = inputTensor;
-          else feeds[inNames[0]] = inputTensor;
-          if (inNames.includes('input_lengths')) feeds['input_lengths'] = lengthsTensor;
-          if (inNames.includes('scales')) feeds['scales'] = scalesTensor;
-
-          const results = await naraSession.run(feeds);
-          const outName = naraSession.outputNames[0];
-          const audioData = results[outName].data;
-          const sr = naraConfig?.audio?.sampling_rate || naraConfig?.data?.sampling_rate || 22050;
-          const blob = encodeWavBlob(audioData, sr);
-          const url = URL.createObjectURL(blob);
-          const entry = { blob, url, engine: 'nara' };
-          audioCacheMap.set(msgId, entry);
-          return entry;
-        } catch (e) {}
-      }
+  async function fetchEdgeTTSAudio(text, msgId) {
+    const workerUrl = (config.ttsWorkerUrl || '').trim().replace(/\/+$/, '');
+    if (!workerUrl) {
+      throw new Error('NO_WORKER_URL');
     }
 
-    const clean = myanmarG2PNormalize(text);
-    const sampleRate = 22050;
-    const syllables = clean.match(/[\u1000-\u102A][\u102B-\u103E\u1056-\u1059]*|[a-zA-Z0-9]+/g) || ['a'];
-    const secPerSyl = 0.16 / speed;
-    const totalSamples = Math.max(sampleRate * 0.5, Math.floor(syllables.length * secPerSyl * sampleRate));
-    const pcm = new Float32Array(totalSamples);
+    const voice = config.ttsVoice || 'my-MM-NilarNeural';
+    const rate = speedToEdgeRate(config.ttsSpeed);
+    const cacheKey = `${msgId}_${voice}_${rate}`;
 
-    syllables.forEach((syl, idx) => {
-      const start = Math.floor(idx * secPerSyl * sampleRate);
-      const len = Math.floor(secPerSyl * 0.8 * sampleRate);
-      const baseFreq = 195 + (syl.charCodeAt(0) % 45);
-      for (let i = 0; i < len && (start + i) < totalSamples; i++) {
-        const t = i / sampleRate;
-        const env = Math.sin((i / len) * Math.PI);
-        pcm[start + i] = env * 0.25 * (Math.sin(2 * Math.PI * baseFreq * t) + 0.3 * Math.sin(4 * Math.PI * baseFreq * t));
-      }
+    if (audioCacheMap.has(cacheKey)) {
+      return audioCacheMap.get(cacheKey);
+    }
+
+    const clean = cleanTextForSpeech(text);
+    const res = await fetch(workerUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: clean, voice, rate })
     });
 
-    const blob = encodeWavBlob(pcm, sampleRate);
+    if (!res.ok) {
+      const errText = await res.text().catch(() => res.statusText);
+      throw new Error(`Worker Error (${res.status}): ${errText}`);
+    }
+
+    const blob = await res.blob();
     const url = URL.createObjectURL(blob);
-    const entry = { blob, url, engine: 'webspeech' };
-    audioCacheMap.set(msgId, entry);
+    const entry = { blob, url };
+    audioCacheMap.set(cacheKey, entry);
     return entry;
   }
-
-  let currentAudioEl = null;
 
   async function playMyanmarTTS(text, msgId, btn, cardEl) {
     window.speechSynthesis.cancel();
@@ -1085,11 +947,17 @@
     }
 
     const origLabel = '🔊 အသံဖတ်မည်';
-    btn.innerText = '⏳ အသံပြင်ဆင်နေသည်...';
 
-    const entry = await synthesizeMyanmarAudio(text, msgId);
+    if (!config.ttsWorkerUrl || !config.ttsWorkerUrl.trim()) {
+      alert('Menu (=) > Settings ထဲမှာ Cloudflare Worker URL ကို အရင်ထည့်ပေးပါ။');
+      openSettings();
+      return;
+    }
 
-    if (entry.engine === 'nara') {
+    btn.innerText = '⏳ အသံထုတ်နေသည်...';
+
+    try {
+      const entry = await fetchEdgeTTSAudio(text, msgId);
       let player = cardEl.querySelector('audio.audio-player-mini');
       if (!player) {
         player = document.createElement('audio');
@@ -1102,35 +970,37 @@
       btn.innerText = '🔊 ဖတ်နေသည်...';
       player.onended = () => { btn.innerText = origLabel; };
       player.onerror = () => { btn.innerText = origLabel; };
-      player.play().catch(() => { btn.innerText = origLabel; });
-    } else {
-      const clean = myanmarG2PNormalize(text);
-      if ('speechSynthesis' in window) {
-        const utt = new SpeechSynthesisUtterance(clean);
-        utt.lang = 'my-MM';
-        utt.rate = parseFloat(config.ttsSpeed) || 1.0;
-        btn.innerText = '🔊 ဖတ်နေသည်...';
-        utt.onend = () => { btn.innerText = origLabel; };
-        utt.onerror = () => { btn.innerText = origLabel; };
-        window.speechSynthesis.speak(utt);
-      } else {
-        btn.innerText = origLabel;
-      }
+      await player.play();
+    } catch (err) {
+      btn.innerText = origLabel;
+      updateStatus(`⚠️ TTS Error: ${err.message}`);
+      alert(`Edge TTS အသံထုတ်မရပါ:\n${err.message}`);
     }
   }
 
   async function downloadMyanmarAudio(text, msgId, btn) {
+    if (!config.ttsWorkerUrl || !config.ttsWorkerUrl.trim()) {
+      alert('Menu (=) > Settings ထဲမှာ Cloudflare Worker URL ကို အရင်ထည့်ပေးပါ။');
+      openSettings();
+      return;
+    }
+
     const origLabel = '⬇️ Download';
-    btn.innerText = '⏳ ထုတ်ယူနေသည်...';
-    const entry = await synthesizeMyanmarAudio(text, msgId);
-    const a = document.createElement('a');
-    a.href = entry.url;
-    a.download = `myanmar_voice_${msgId}.wav`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    btn.innerText = '✅ Saved';
-    setTimeout(() => { btn.innerText = origLabel; }, 1500);
+    btn.innerText = '⏳ ဒေါင်းနေသည်...';
+    try {
+      const entry = await fetchEdgeTTSAudio(text, msgId);
+      const a = document.createElement('a');
+      a.href = entry.url;
+      a.download = `myanmar_edge_tts_${msgId}.mp3`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      btn.innerText = '✅ Saved';
+      setTimeout(() => { btn.innerText = origLabel; }, 1500);
+    } catch (err) {
+      btn.innerText = origLabel;
+      alert(`Download မရပါ:\n${err.message}`);
+    }
   }
 
   // =========================================================================
@@ -1148,7 +1018,8 @@
 
   let config = Object.assign({
     style: 'harmonious',
-    ttsEngine: 'nara-onnx',
+    ttsWorkerUrl: '',
+    ttsVoice: 'my-MM-NilarNeural',
     ttsSpeed: 1.0,
     gKey: localStorage.getItem('g_key') || '',
     gModel: 'gemini-flash-latest',
@@ -1309,7 +1180,7 @@
       box.innerHTML = `
         <div class="empty-state" id="empty-state">
           <h2>🇲🇲 Myanmar AI Trio Studio</h2>
-          <p>Gemini, DeepSeek နှင့် Groq တို့ ၃ ဦးသား <b>မြန်မာဘာသာစကား သီးသန့်</b> ဖြင့် ဘာသာရေး၊ လူမှုရေး၊ စီးပွားရေးနှင့် ပညာရေး အကြောင်းအရာများကို အပြန်အလှန် ဆွေးနွေးပေးပါမည်။<br><br>အောက်ခြေ <b>+</b> ခလုတ်ကိုနှိပ်ပြီး မေးခွန်းများ ရွေးချယ်နိုင်ပါသည်။</p>
+          <p>Gemini, DeepSeek နှင့် Groq တို့ ၃ ဦးသား <b>မြန်မာဘာသာစကား သီးသန့်</b> ဖြင့် ဆွေးနွေးပေးပြီး Edge TTS (Nilar / Thiha) အသံဖြင့် နားဆင်နိုင်ပါသည်။<br><br>အောက်ခြေ <b>+</b> ခလုတ်ကိုနှိပ်ပြီး မေးခွန်းများ ရွေးချယ်နိုင်ပါသည်။</p>
         </div>`;
     } else {
       session.messages.forEach((m, idx) => renderCard(m.role, m.name, m.text, m.image, m.id || `${id}_${idx}`));
@@ -1725,7 +1596,8 @@ STRICT RULES:
 
   function openSettings() {
     document.getElementById('set-style').value = config.style;
-    document.getElementById('set-tts-engine').value = config.ttsEngine;
+    document.getElementById('set-tts-worker').value = config.ttsWorkerUrl || '';
+    document.getElementById('set-tts-voice').value = config.ttsVoice || 'my-MM-NilarNeural';
     document.getElementById('set-g-key').value = config.gKey;
     document.getElementById('set-g-model').value = config.gModel;
     document.getElementById('set-o-key').value = config.oKey;
@@ -1743,7 +1615,8 @@ STRICT RULES:
 
   function saveSettings() {
     config.style = document.getElementById('set-style').value;
-    config.ttsEngine = document.getElementById('set-tts-engine').value;
+    config.ttsWorkerUrl = document.getElementById('set-tts-worker').value.trim();
+    config.ttsVoice = document.getElementById('set-tts-voice').value;
     config.gKey = document.getElementById('set-g-key').value.trim();
     config.gModel = document.getElementById('set-g-model').value;
     config.oKey = document.getElementById('set-o-key').value.trim();
